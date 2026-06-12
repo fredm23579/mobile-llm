@@ -4,6 +4,7 @@
 [![C++ Standard](https://img.shields.io/badge/C%2B%2B-17-blue.svg)](https://isocpp.org/)
 [![Fortran](https://img.shields.io/badge/Fortran-2003-purple.svg)](#)
 [![Platform](https://img.shields.io/badge/Platform-Termux%20%7C%20Android%20%7C%20Linux-orange.svg)](#)
+[![Complexity](https://img.shields.io/badge/Complexity-O(N)%20Linear-red.svg)](#)
 [![License](https://img.shields.io/badge/License-MIT-gray.svg)](#)
 
 > **State-of-the-Art $O(N)$ Linear-Time Large Language Model Inference Engine for Mobile Devices.**
@@ -12,9 +13,9 @@ MobileLLM is a highly optimized, zero-Python inference engine designed specifica
 
 ---
 
-## 🌟 Core Architecture
+## 🌟 Core Architecture: O(N) Computational Efficiency
 
-Traditional Transformer LLMs rely on $O(N^2)$ quadratic attention, which rapidly exhausts mobile RAM on long contexts. MobileLLM abandons this in favor of a **Linear Recurrent State-Space** model (similar to Mamba/RWKV), ensuring $O(N)$ inference speed and a constant $O(1)$ memory footprint per token.
+Traditional Transformer LLMs rely on $O(N^2)$ quadratic attention, which rapidly exhausts mobile RAM on long contexts. MobileLLM abandons this in favor of a **Linear Recurrent State-Space** model (similar to Mamba/RWKV). This guarantees $O(N)$ inference speed and a constant $O(1)$ memory footprint per token, allowing multi-gigabyte inference directly on your phone's CPU.
 
 ```mermaid
 graph TD
@@ -25,17 +26,33 @@ graph TD
     C -->|KV Matrix| E[TurboQuant]
     E -->|Eigen3 QR Rotation| F[INT8 Compressed Cache]
     C --> G[Output Logits]
-    G -->|ReAct Parser| H[Agent OS Bridge]
-    H -->|popen| I[Termux Bash]
+    G -->|Karpathy AutoResearch| H[Agent OS Bridge]
+    H -->|popen| I[Termux Bash Layer]
 ```
 
 ## 🚀 Key Features
 
 *   **Zero-Python Execution:** The entire engine runs natively. No bloated interpreters, no memory leaks.
-*   **Fortran 2003 Acceleration:** Critical inner-loop mathematical decay functions are passed via raw memory pointers directly to `!DIR$ SIMD` optimized Fortran binaries, bypassing even C++ pointer abstraction overhead.
-*   **TurboQuant Compression:** Implements randomized orthogonal rotations via Eigen3 (NumPy C++ equivalent) to squash 32-bit float vector spaces into strictly bounded `[-127, 127]` INT8 arrays, slashing KV-cache requirements.
-*   **GGUF v3 Binary Parser:** Capable of scanning memory-mapped `model.gguf` files, stripping out metadata, and mounting multi-gigabyte Tensor offsets directly into the inference loop.
-*   **Native ReAct Agent:** Ships with an autonomous wrapper that natively parses `Thought: / Action: / ActionInput:` strings and pipes them into the host OS via `popen()` to execute bash commands and capture `stdout`.
+*   **Fortran 2003 Acceleration:** Critical inner-loop mathematical decay functions are passed via raw memory pointers directly to `!DIR$ SIMD` optimized Fortran binaries, bypassing C++ abstraction overhead.
+*   **TurboQuant Compression:** Implements randomized orthogonal rotations via Eigen3 to squash 32-bit float vector spaces into strictly bounded `[-127, 127]` INT8 arrays, drastically slashing KV-cache constraints.
+*   **GGUF v3 Binary Parser:** Capable of scanning memory-mapped `model.gguf` files, stripping out metadata, and mounting multi-gigabyte Tensor offsets natively.
+*   **Infinite AutoResearch Loop (Karpathy-Style):** Automatically generates step-by-step specifications and continuously self-corrects against observations until the final objective is reached.
+
+## 🛠️ The 13-Tool Termux Arsenal
+The LLM isn't just a chatbot; it's a native OS controller equipped with custom C++ tools that map directly to the Linux Kernel:
+1. **`run_command`**: Directly executes Termux bash commands.
+2. **`read_file`**: Rapid stream-buffer reading.
+3. **`write_file`**: Native OS file construction.
+4. **`delete_file`**: `<cstdio>` kernel removal API.
+5. **`copy_file`**: Memory-to-memory duplication.
+6. **`move_file`**: Native `std::rename` file manipulation.
+7. **`list_dir`**: Subprocess directory hierarchies.
+8. **`search_web`**: Headless API search querying.
+9. **`fetch_url`**: Headless Mozilla/5.0 web scraping.
+10. **`pattern_match`**: Native `grep` piping.
+11. **`mathematics`**: Boundless arithmetic via `bc -l`.
+12. **`text_parsing`**: Complex Unix stream extraction via `awk`.
+13. **`universal_parse`**: Dynamic magic-byte format shifting (parses `.json`, `.csv`, `.xml`, and raw `.bin` hex dumps via `xxd`).
 
 ## 📂 Directory Structure
 

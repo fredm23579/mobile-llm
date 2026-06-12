@@ -10,12 +10,10 @@
 #include <array>
 #include <fstream>
 
-// Forward declaration of our LLM engine
-class LinearLLM;
-
+template <typename LLM>
 class Agent {
 public:
-    Agent(LinearLLM& llm) : llm_(llm) {}
+    Agent(LLM& llm) : llm_(llm) {}
 
     std::string run_autoresearch_loop(const std::string& user_prompt) {
         std::cout << "[AutoResearch] Initializing Deep Research Protocol..." << std::endl;
@@ -287,7 +285,7 @@ public:
     }
 
 private:
-    LinearLLM& llm_;
+    LLM& llm_;
 };
 
 #endif // AGENT_HPP
