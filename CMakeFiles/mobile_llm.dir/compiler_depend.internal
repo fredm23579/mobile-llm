@@ -4,6 +4,8 @@
 CMakeFiles/mobile_llm.dir/main.cpp.o
  /root/mobile-llm/main.cpp
  /root/mobile-llm/agent.hpp
+ /root/mobile-llm/gguf_parser.hpp
+ /root/mobile-llm/tokenizer.hpp
  /root/mobile-llm/turboquant.hpp
  /root/venv/lib/python3.14/site-packages/torch/include/ATen/ATen.h
  /root/venv/lib/python3.14/site-packages/torch/include/ATen/BlasBackend.h
@@ -4897,8 +4899,10 @@ CMakeFiles/mobile_llm.dir/main.cpp.o
  /usr/include/aarch64-linux-gnu/bits/wordsize.h
  /usr/include/aarch64-linux-gnu/bits/xopen_lim.h
  /usr/include/aarch64-linux-gnu/c++/15/bits/atomic_word.h
+ /usr/include/aarch64-linux-gnu/c++/15/bits/basic_file.h
  /usr/include/aarch64-linux-gnu/c++/15/bits/c++allocator.h
  /usr/include/aarch64-linux-gnu/c++/15/bits/c++config.h
+ /usr/include/aarch64-linux-gnu/c++/15/bits/c++io.h
  /usr/include/aarch64-linux-gnu/c++/15/bits/c++locale.h
  /usr/include/aarch64-linux-gnu/c++/15/bits/cpu_defines.h
  /usr/include/aarch64-linux-gnu/c++/15/bits/ctype_base.h
@@ -4954,6 +4958,7 @@ CMakeFiles/mobile_llm.dir/main.cpp.o
  /usr/include/c++/15/bits/exception.h
  /usr/include/c++/15/bits/exception_defines.h
  /usr/include/c++/15/bits/exception_ptr.h
+ /usr/include/c++/15/bits/fstream.tcc
  /usr/include/c++/15/bits/functexcept.h
  /usr/include/c++/15/bits/functional_hash.h
  /usr/include/c++/15/bits/hash_bytes.h
@@ -5070,6 +5075,7 @@ CMakeFiles/mobile_llm.dir/main.cpp.o
  /usr/include/c++/15/ext/numeric_traits.h
  /usr/include/c++/15/ext/string_conversions.h
  /usr/include/c++/15/ext/type_traits.h
+ /usr/include/c++/15/fstream
  /usr/include/c++/15/functional
  /usr/include/c++/15/initializer_list
  /usr/include/c++/15/iomanip
