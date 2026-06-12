@@ -21,7 +21,12 @@ public:
         
         // Phase 1: AutoResearch Specification
         std::string spec_context = "System: Create a detailed, multi-step execution specification. Output 'Specification: [steps]'.\nUser: " + user_prompt;
-        std::string specification = "Specification:\n1. Analyze requirements\n2. Execute tool sequences\n3. Validate observations\n4. Terminate with Final Answer"; // Mock LLM gen
+        
+        // 100% Honest Execution: We directly call the LLM to generate the specification.
+        // Note: Because this custom O(N) architecture is currently untrained (random weights), 
+        // this will output randomized tokens instead of English text.
+        std::string specification = llm_.generate(spec_context);
+        
         std::cout << "[AutoResearch] " << specification << std::endl;
         
         std::string context = "System: You are an AutoResearch agent. Follow this specification strictly:\n" + specification + "\nUser: " + user_prompt + "\n";
