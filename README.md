@@ -67,20 +67,24 @@ While MobileLLM features a highly experimental linear-time inference engine via 
 
 By passing the `--llama` flag, you can bridge the C++ MobileLLM agent frontend directly to a standard `llama.cpp` server backend.
 
-```bash
-# Interactive Chat with Llama.cpp backend
-./mobile_llm --llama --chat
-
-# Autonomous Agent Loop with Llama.cpp backend
-./mobile_llm --llama --prompt "Analyze the environment and report."
-```
-
 **The Split-Brain Architecture:**
 This provides the ultimate hybrid architecture: you get the ultra-capable, zero-Python C++ Karpathy-style agent loop with its 13 native OS tools, but powered by the heavily optimized, rock-solid inference of `llama.cpp`. 
 
 The system implements a **Dynamic Split-Brain**:
 1. **`--chat` (Conversational Mode):** The C++ backend automatically passes a state flag to the Python adapter, deactivating the aggressive OS Hacker prompt and replacing it with a clean, conversational AI persona.
 2. **`--prompt` (Agent Mode):** The translation adapter natively reformats the prompts into `<|im_start|>` chat templates, enabling strict `Thought -> Action -> ActionInput` AutoResearch enforcement for highly intelligent, dense models like **Qwen2.5-1.5B**.
+
+### ⚡ Quick Start: Qwen2.5 Server Setup
+To use the `--llama` flag with the recommended **Qwen2.5-1.5B-Instruct** model, run the following in your terminal to boot the backend:
+
+```bash
+# 1. Download the highly intelligent Qwen 1.5B model (1.1GB)
+wget -q --show-progress "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/qwen2.5-1.5b-instruct-q4_k_m.gguf" -O qwen.gguf
+
+# 2. Boot the persistent Llama.cpp server in the background
+./llama.cpp/build/bin/llama-server -m qwen.gguf -c 2048 --port 8080 &
+```
+*Once the server indicates `HTTP server listening`, your C++ engine is ready to connect!*
 
 ### Execution Examples
 
