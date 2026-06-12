@@ -75,15 +75,46 @@ By passing the `--llama` flag, you can bridge the C++ MobileLLM agent frontend d
 ./mobile_llm --llama --prompt "Analyze the environment and report."
 ```
 
-**How It Works:**
-When this flag is active, the engine bypasses the internal LibTorch inference module. Instead, it routes generation requests (along with the 13-tool system prompt) through a translation layer (`LlamaServerAdapter` via `request_llama.py`), which queries a local `llama.cpp` server running at `http://127.0.0.1:8080/completion`.
-
 **The Split-Brain Architecture:**
 This provides the ultimate hybrid architecture: you get the ultra-capable, zero-Python C++ Karpathy-style agent loop with its 13 native OS tools, but powered by the heavily optimized, rock-solid inference of `llama.cpp`. 
 
 The system implements a **Dynamic Split-Brain**:
 1. **`--chat` (Conversational Mode):** The C++ backend automatically passes a state flag to the Python adapter, deactivating the aggressive OS Hacker prompt and replacing it with a clean, conversational AI persona.
 2. **`--prompt` (Agent Mode):** The translation adapter natively reformats the prompts into `<|im_start|>` chat templates, enabling strict `Thought -> Action -> ActionInput` AutoResearch enforcement for highly intelligent, dense models like **Qwen2.5-1.5B**.
+
+### Execution Examples
+
+**1. Conversational Chat Mode:**
+```bash
+./mobile_llm --llama --chat
+```
+*Output:*
+```text
+[Translation Layer] Routing inference to local Llama.cpp backend...
+[Interactive Chat Mode Started. Type 'exit' to quit.]
+User> What can you do?
+MobileLLM> As an AI language model, I can do several things:
+1. Generate text: I can create written content such as articles...
+```
+
+**2. Autonomous OS Agent Mode (Math Evaluation):**
+```bash
+./mobile_llm --llama --prompt "Calculate the 10th Fibonacci number"
+```
+*Output:*
+```text
+[Translation Layer] Routing inference to local Llama.cpp backend...
+[AutoResearch] Initializing Deep Research Protocol...
+[AutoResearch] Drafting execution specifications...
+[AutoResearch] Thought: To calculate the 10th Fibonacci number, I need to use the mathematics tool to evaluate the Python math expression for the Fibonacci sequence.
+Action: mathematics
+ActionInput: ((1+math.sqrt(5))**10 - (1-math.sqrt(5))**10) / (2**10 * math.sqrt(5))
+
+[Agent] Parsed Action: mathematics | Input: ((1+math.sqrt(5))**10 - (1-math.sqrt(5))**10) / (2**10 * math.sqrt(5))
+[Agent] Observation: 55.000000000000014
+
+[Execution Complete]
+```
 
 *Note: Ensure your `llama.cpp` server is running locally on port 8080 before using this mode.*
 
