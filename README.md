@@ -11,6 +11,13 @@
 
 MobileLLM is a highly optimized, zero-Python inference engine designed specifically for deployment in heavily memory-constrained environments like Android Termux. By combining native C++17 abstractions with bare-metal Fortran SIMD vectorization and experimental INT8 KV-cache quantization, it pushes the absolute physical limits of mobile CPU computation.
 
+## 🧠 Inference vs. Training: The Reality of Edge AI
+
+It is mathematically impossible to train a Large Language Model from scratch on a mobile CPU. Training an LLM requires computing billions of gradients across datasets like Wikipedia—a process that takes hundreds of A100 Supercomputer GPUs several weeks to complete. 
+
+**MobileLLM is an Inference Engine, not a training cluster.** 
+The explicit goal of this C++ architecture is to take the heavy mathematical weights that massive tech companies have already paid millions of dollars to train, and execute them natively on low-power, constrained edge devices. We solve the quadratic memory bottleneck so you can run billion-parameter models on your phone.
+
 ---
 
 ## 🌟 Core Architecture: O(N) Computational Efficiency
