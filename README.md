@@ -71,8 +71,26 @@ By passing the `--backend` flag, the C++ engine dynamically reformats its payloa
 # 1. Local Llama.cpp backend (Default)
 ./mobile_llm --backend llama.cpp --chat
 
-# 2. Local Ollama API (e.g. Llama-3)
+# 2. Local Ollama API
+Ollama is a lightweight local server that effortlessly manages open-source weights. Make sure your Ollama daemon is running (`ollama serve`) before executing:
+
+```bash
+# Meta Llama 3
+ollama pull llama3
 ./mobile_llm --backend ollama --model llama3 --prompt "Analyze the filesystem."
+
+# Qwen 2.5 (Recommended for AutoResearch)
+ollama pull qwen2.5
+./mobile_llm --backend ollama --model qwen2.5 --prompt "Analyze the filesystem."
+
+# Mistral
+ollama pull mistral
+./mobile_llm --backend ollama --model mistral --prompt "Analyze the filesystem."
+
+# Microsoft Phi-3
+ollama pull phi3
+./mobile_llm --backend ollama --model phi3 --prompt "Analyze the filesystem."
+```
 
 # 3. Cloud HuggingFace Inference API
 Because the engine routes directly to `api-inference.huggingface.co`, you have access to thousands of models. You must export your HuggingFace token first:
