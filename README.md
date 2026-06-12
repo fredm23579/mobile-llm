@@ -75,8 +75,21 @@ By passing the `--backend` flag, the C++ engine dynamically reformats its payloa
 ./mobile_llm --backend ollama --model llama3 --prompt "Analyze the filesystem."
 
 # 3. Cloud HuggingFace Inference API
+Because the engine routes directly to `api-inference.huggingface.co`, you have access to thousands of models. You must export your HuggingFace token first:
+```bash
 export HF_TOKEN="your_token_here"
+
+# Meta Llama 3 (8B)
 ./mobile_llm --backend huggingface --model meta-llama/Meta-Llama-3-8B-Instruct --chat
+
+# Qwen 2.5 (72B) - Highly Recommended for AutoResearch Math/Coding
+./mobile_llm --backend huggingface --model Qwen/Qwen2.5-72B-Instruct --chat
+
+# Mistral v0.3 (7B)
+./mobile_llm --backend huggingface --model mistralai/Mistral-7B-Instruct-v0.3 --chat
+
+# Microsoft Phi-3 (Mini 4K)
+./mobile_llm --backend huggingface --model microsoft/Phi-3-mini-4k-instruct --chat
 ```
 
 **How It Works:**
