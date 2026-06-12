@@ -5275,4 +5275,8 @@ CMakeFiles/mobile_llm.dir/main.cpp.o: /root/mobile-llm/main.cpp \
  /usr/include/eigen3/Eigen/src/Eigenvalues/GeneralizedEigenSolver.h \
  /usr/include/eigen3/Eigen/src/Eigenvalues/RealQZ.h \
  /usr/include/eigen3/Eigen/src/Eigenvalues/MatrixBaseEigenvalues.h \
- /root/mobile-llm/agent.hpp
+ /root/mobile-llm/agent.hpp /root/mobile-llm/gguf_parser.hpp \
+ /usr/include/c++/15/fstream \
+ /usr/include/aarch64-linux-gnu/c++/15/bits/basic_file.h \
+ /usr/include/aarch64-linux-gnu/c++/15/bits/c++io.h \
+ /usr/include/c++/15/bits/fstream.tcc /root/mobile-llm/tokenizer.hpp

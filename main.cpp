@@ -7,6 +7,8 @@
 
 #include "turboquant.hpp"
 #include "agent.hpp"
+#include "gguf_parser.hpp"
+#include "tokenizer.hpp"
 
 // External binding to the native Fortran subroutine for ultra-fast raw math
 extern "C" {
@@ -20,12 +22,12 @@ extern "C" {
  */
 class LibTorchLinearLLM {
 public:
-    LibTorchLinearLLM(int d_model, int vocab_size) 
-        : d_model_(d_model), vocab_size_(vocab_size), quantizer_(d_model) {
+    LibTorchLinearLLM(int d_model, int vocab_size, const std::string& model_path) 
+        : d_model_(d_model), vocab_size_(vocab_size), 
+          quantizer_(d_model), parser_(model_path), tokenizer_("vocab.json") {
         
-        // PyTorch C++ Equivalents
-        W_out = torch::randn({d_model_, vocab_size_}, torch::requires_grad(false));
-        W_out /= std::sqrt(d_model_);
+        // PyTorch C++ Equivalents using GGUF Parser
+        W_out = parser_.load_tensor("output.weight", {d_model_, vocab_size_});
         
         // Initialize hidden state tensor
         hidden_state = torch::zeros({1, d_model_});
@@ -33,7 +35,8 @@ public:
 
     std::string generate(const std::string& prompt) {
         // Step 1: Tokenization
-        std::vector<int> tokens = {101, 2045, 1032, 102}; // Mock token stream
+        std::vector<int> tokens = tokenizer_.encode(prompt);
+        if (tokens.empty()) tokens = {101, 2045, 1032}; // Fallback for testing
         
         // Step 2: O(N) Forward Pass (Polynomial complexity: degree 1)
         for (int token : tokens) {
@@ -76,6 +79,8 @@ private:
     torch::Tensor W_out;
     torch::Tensor hidden_state;
     tq::TurboQuant quantizer_;
+    GGUFParser parser_;
+    BPETokenizer tokenizer_;
     std::vector<std::vector<int8_t>> kv_cache_;
 };
 
@@ -92,9 +97,10 @@ int main() {
 
         int d_model = 256;
         int vocab_size = 32000;
+        std::string mock_model_path = "model.gguf";
         
         std::cout << "Initializing LibTorch model weights..." << std::endl;
-        LibTorchLinearLLM model(d_model, vocab_size);
+        LibTorchLinearLLM model(d_model, vocab_size, mock_model_path);
 
         // We wrap the LibTorch model in our Agent class for autonomous capabilities
         // Note: We need a generic wrapper to pass to the Agent
