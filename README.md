@@ -61,6 +61,27 @@ The LLM isn't just a chatbot; it's a native OS controller equipped with custom C
 12. **`text_parsing`**: Complex Unix stream extraction via `awk`.
 13. **`universal_parse`**: Dynamic magic-byte format shifting (parses `.json`, `.csv`, `.xml`, and raw `.bin` hex dumps via `xxd`).
 
+## 🦙 Open-Source Model Selector (`--backend`)
+
+While MobileLLM features an internal experimental linear-time inference engine, you can seamlessly bridge the native C++ agent frontend to powerful open-source models via external backends like **Llama.cpp**, **Ollama**, and **HuggingFace Inference Endpoints**.
+
+By passing the `--backend` flag, the C++ engine dynamically reformats its payload and routes it to the corresponding API:
+
+```bash
+# 1. Local Llama.cpp backend (Default)
+./mobile_llm --backend llama.cpp --chat
+
+# 2. Local Ollama API (e.g. Llama-3)
+./mobile_llm --backend ollama --model llama3 --prompt "Analyze the filesystem."
+
+# 3. Cloud HuggingFace Inference API
+export HF_TOKEN="your_token_here"
+./mobile_llm --backend huggingface --model meta-llama/Meta-Llama-3-8B-Instruct --chat
+```
+
+**How It Works:**
+The engine bypasses internal LibTorch inference and routes requests through a highly modular translation layer (`request_llama.py`). It dynamically constructs `<|im_start|>` ReAct structures and negotiates raw JSON-REST APIs for port `8080` (llama.cpp), port `11434` (Ollama), or the HuggingFace URL endpoints, injecting system prompts securely into the stream.
+
 ## 🦙 Llama.cpp & Qwen Integration (`--llama`)
 
 While MobileLLM features a highly experimental linear-time inference engine via LibTorch, you may prefer the robust, standard optimization of a conventional `llama.cpp` backend.

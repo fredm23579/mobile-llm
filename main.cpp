@@ -84,11 +84,14 @@ private:
     std::vector<std::vector<int8_t>> kv_cache_;
 };
 
-// Translation Adapter for standard HuggingFace models via Llama.cpp server
+// Translation Adapter for standard HuggingFace models via Llama.cpp server or Ollama
 class LlamaServerAdapter {
     bool is_chat_;
+    std::string backend_;
+    std::string model_;
 public:
-    LlamaServerAdapter(bool is_chat = false) : is_chat_(is_chat) {}
+    LlamaServerAdapter(bool is_chat = false, std::string backend = "llama.cpp", std::string model = "llama3") 
+        : is_chat_(is_chat), backend_(backend), model_(model) {}
     
     std::string generate(const std::string& prompt) {
         std::ofstream out("/tmp/llm_prompt.txt");
@@ -97,6 +100,7 @@ public:
         
         std::string cmd = "python3 /root/mobile-llm/request_llama.py";
         if (is_chat_) cmd += " --chat";
+        cmd += " --backend " + backend_ + " --model " + model_;
         cmd += " < /tmp/llm_prompt.txt";
         
         std::array<char, 128> buffer;
@@ -119,7 +123,8 @@ int main(int argc, char* argv[]) {
     std::cout << "===========================================" << std::endl;
 
     std::string user_prompt = "Analyze the environment and report.";
-    std::string model_path = "model.gguf";
+    std::string model_path = "model.gguf"; // LibTorch/Llama.cpp default
+    std::string backend = "llama.cpp";
     bool chat_mode = false;
     bool llama_mode = false;
 
@@ -128,6 +133,7 @@ int main(int argc, char* argv[]) {
         std::string arg = argv[i];
         if (arg == "--prompt" && i + 1 < argc) user_prompt = argv[++i];
         else if (arg == "--model" && i + 1 < argc) model_path = argv[++i];
+        else if (arg == "--backend" && i + 1 < argc) { backend = argv[++i]; llama_mode = true; }
         else if (arg == "--chat") chat_mode = true;
         else if (arg == "--llama") llama_mode = true;
     }
@@ -140,8 +146,8 @@ int main(int argc, char* argv[]) {
         int vocab_size = 32000;
         
         if (llama_mode) {
-            std::cout << "[Translation Layer] Routing inference to local Llama.cpp backend..." << std::endl;
-            LlamaServerAdapter model(chat_mode);
+            std::cout << "[Translation Layer] Routing inference to backend: " << backend << std::endl;
+            LlamaServerAdapter model(chat_mode, backend, model_path);
             if (chat_mode) {
                 std::cout << "\n[Interactive Chat Mode Started. Type 'exit' to quit.]\n";
                 std::string input;
