@@ -30,10 +30,16 @@ public:
         for (int i = 0; i < max_iterations; ++i) {
             std::cout << "\n[AutoResearch] Iteration " << (i+1) << "/" << max_iterations << " | Generating thought/action..." << std::endl;
             
-            // In reality, llm_.generate(context) would run inference
-            std::string response;
-            if (i == 0) response = "Thought: I need to use a tool.\nAction: run_command\nActionInput: echo \"hello from termux\"\n";
-            else response = "Thought: Done.\nFinal Answer: Task completed.";
+            // Run raw $O(N)$ linear-time inference through the LibTorch/Fortran core
+            std::string response = llm_.generate(context);
+            
+            // Note: Because we are currently running without real model.gguf weights, 
+            // the LibTorch layer will just return randomized tokens. 
+            // If it fails to output an action, we forcefully terminate the loop to prevent infinite token bleeding.
+            if (response.find("Action:") == std::string::npos && response.find("Final Answer:") == std::string::npos) {
+                std::cout << "[Agent Warning] LLM generated invalid ReAct formatting (expected Action or Final Answer)." << std::endl;
+                response = "Final Answer: Error - Invalid syntax from LLM generator.";
+            }
             
             context += response;
             
