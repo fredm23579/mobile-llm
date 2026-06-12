@@ -1,32 +1,32 @@
-cmake_minimum_required(VERSION 3.10)
-project(MobileLLM CXX)
+cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
+project(MobileLLM_LibTorch CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-# Find Boost
-find_package(Boost REQUIRED COMPONENTS timer system)
+# --- Dependency Equivalents ---
+# PyTorch C++ Equivalent (LibTorch)
+find_package(Torch REQUIRED)
 
-# Find BLAS and LAPACK
-find_package(BLAS REQUIRED)
-find_package(LAPACK REQUIRED)
+# NumPy C++ Equivalent (Eigen3)
+find_package(Eigen3 REQUIRED)
 
-# Include ITensor
-# Note: ITensor provides an options.mk but we will map it to CMake for modern builds
-# We assume ITensor is installed globally or we will link it directly
-include_directories(/root/mobile-llm/ITensor)
-link_directories(/root/mobile-llm/ITensor/lib)
+# Scikit-Learn C++ Equivalent (mlpack)
+# find_package(mlpack REQUIRED)
+
+# Theano/PyTensor C++ Equivalent (Xtensor or direct LibTorch autograd)
+# find_package(xtensor REQUIRED)
 
 add_executable(mobile_llm main.cpp)
 
-# Link everything together
+# Link LibTorch and Eigen
 target_link_libraries(mobile_llm 
-    Boost::timer 
-    Boost::system
-    ${BLAS_LIBRARIES}
-    ${LAPACK_LIBRARIES}
-    # -litensor # We will compile ITensor separately and link it
+    ${TORCH_LIBRARIES} 
+    Eigen3::Eigen
+    # mlpack
 )
 
-# Termux optimization flags: -O3, NEON SIMD for ARM64
+# Termux / Mobile Architectures Optimization
+# -O3 for max optimization, -ffast-math for floating point polynomial speedups
 target_compile_options(mobile_llm PRIVATE -O3 -march=native -ffast-math)
+set_property(TARGET mobile_llm PROPERTY CXX_STANDARD 17)

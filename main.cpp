@@ -1,87 +1,91 @@
 #include <iostream>
 #include <vector>
-#include <boost/timer/timer.hpp>
-#include <boost/format.hpp>
-#include <itensor/all.h>
+#include <string>
+
+// LibTorch: C++ equivalent of PyTorch
+#include <torch/torch.h>
 
 #include "turboquant.hpp"
 #include "agent.hpp"
 
-using namespace itensor;
-
 /**
- * A linear-time complexity LLM layer (conceptualized as RWKV / Linear Attention).
- * O(N) complexity with respect to sequence length, utilizing ITensor for network operations 
- * and BLAS/LAPACK underneath.
+ * Linear-Time Complexity LLM Layer O(N)
+ * Replaces standard O(N^2) Transformer Attention with a Linear Recurrent State.
+ * Utilizes LibTorch (PyTorch C++) for autograd and hardware acceleration.
  */
-class LinearLLM {
+class LibTorchLinearLLM {
 public:
-    LinearLLM(int d_model, int vocab_size) : d_model_(d_model), vocab_size_(vocab_size), quantizer_(d_model) {
-        // Initialize tensor indices
-        emb_idx = Index(d_model_, "Emb");
-        vocab_idx = Index(vocab_size_, "Vocab");
-
-        // Mock parameters
-        W_out = randomITensor(emb_idx, vocab_idx);
+    LibTorchLinearLLM(int d_model, int vocab_size) 
+        : d_model_(d_model), vocab_size_(vocab_size), quantizer_(d_model) {
+        
+        // PyTorch C++ Equivalents
+        W_out = torch::randn({d_model_, vocab_size_}, torch::requires_grad(false));
         W_out /= std::sqrt(d_model_);
+        
+        // Initialize hidden state tensor
+        hidden_state = torch::zeros({1, d_model_});
     }
 
     std::string generate(const std::string& prompt) {
-        // Step 1: Tokenization (Mock)
-        std::vector<int> tokens = {1, 2, 3, 4}; // Mock token IDs
+        // Step 1: Tokenization
+        std::vector<int> tokens = {101, 2045, 1032, 102}; // Mock token stream
         
-        ITensor state(emb_idx); // Recurrent state (for O(1) inference per token)
-        
+        // Step 2: O(N) Forward Pass (Polynomial complexity: degree 1)
         for (int token : tokens) {
-            // Forward pass: Emulate linear attention / RNN cell
-            // state = decay * state + new_val
-            ITensor current_token(emb_idx);
-            current_token.randomize();
+            // Simulate embedding lookup (PyTorch C++)
+            torch::Tensor token_emb = torch::randn({1, d_model_});
             
-            // Apply BLAS-backed tensor contraction
-            state += current_token;
+            // Linear Attention / State Space updating
+            // hidden_state = decay * hidden_state + token_emb
+            hidden_state = (0.9 * hidden_state) + token_emb;
             
-            // Compress state into KV cache using TurboQuant for extreme memory efficiency on mobile
-            auto compressed_state = quantizer_.quantize(state);
+            // Extract tensor data to std::vector for Eigen quantization
+            std::vector<float> state_vec(
+                hidden_state.data_ptr<float>(), 
+                hidden_state.data_ptr<float>() + d_model_
+            );
+            
+            // Compress using TurboQuant (NumPy/Eigen equivalent)
+            auto compressed_state = quantizer_.quantize(state_vec);
             kv_cache_.push_back(compressed_state);
         }
 
-        // Project to vocabulary
-        ITensor logits = state * W_out;
+        // Project hidden state to vocabulary distribution
+        torch::Tensor logits = torch::matmul(hidden_state, W_out);
+        int predicted_token = logits.argmax(1).item<int>();
         
-        return "Mock generated response from Linear ITensor LLM";
+        return "LibTorch generated response (Token: " + std::to_string(predicted_token) + ")";
     }
 
 private:
     int d_model_;
     int vocab_size_;
-    Index emb_idx;
-    Index vocab_idx;
-    ITensor W_out;
+    torch::Tensor W_out;
+    torch::Tensor hidden_state;
     tq::TurboQuant quantizer_;
     std::vector<std::vector<int8_t>> kv_cache_;
 };
 
 int main() {
     std::cout << "===========================================" << std::endl;
-    std::cout << " Mobile-Optimized Linear-Time LLM Engine   " << std::endl;
-    std::cout << " Backend: ITensor, BLAS, LAPACK, Boost     " << std::endl;
-    std::cout << " Compression: TurboQuant                   " << std::endl;
+    std::cout << " LibTorch/Eigen Mobile-Optimized LLM Engine" << std::endl;
+    std::cout << " Complexity: O(N) Linear Time (Polynomial) " << std::endl;
+    std::cout << " Backends: PyTorch C++, NumPy C++ (Eigen)  " << std::endl;
     std::cout << "===========================================" << std::endl;
 
     try {
-        boost::timer::auto_cpu_timer t;
+        // Force LibTorch to use CPU threads optimized for mobile
+        torch::set_num_threads(4);
 
         int d_model = 256;
         int vocab_size = 32000;
         
-        std::cout << "Initializing model weights (d_model=" << d_model << ")..." << std::endl;
-        LinearLLM model(d_model, vocab_size);
+        std::cout << "Initializing LibTorch model weights..." << std::endl;
+        LibTorchLinearLLM model(d_model, vocab_size);
 
-        Agent agent(model);
-        std::string result = agent.run_autonomous_loop("Set up an alarm for 7 AM.");
-        
-        std::cout << "\n[Execution Complete] " << result << std::endl;
+        // We wrap the LibTorch model in our Agent class for autonomous capabilities
+        // Note: We need a generic wrapper to pass to the Agent
+        std::cout << "\n[Execution Complete] " << model.generate("Initialize Agent Sequence") << std::endl;
     } catch (const std::exception& e) {
         std::cerr << "Fatal Error: " << e.what() << std::endl;
         return 1;
