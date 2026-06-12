@@ -1,0 +1,4 @@
+/root/mobile-llm/CMakeFiles/mobile_llm.dir
+/root/mobile-llm/CMakeFiles/mobile_llm_tests.dir
+/root/mobile-llm/CMakeFiles/edit_cache.dir
+/root/mobile-llm/CMakeFiles/rebuild_cache.dir
