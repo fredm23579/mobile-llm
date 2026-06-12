@@ -4,6 +4,9 @@ project(MobileLLM_LibTorch CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
+# Enable Fortran compilation alongside C++
+enable_language(Fortran)
+
 # --- Dependency Equivalents ---
 # PyTorch C++ Equivalent (LibTorch)
 find_package(Torch REQUIRED)
@@ -17,7 +20,7 @@ find_package(Eigen3 REQUIRED)
 # Theano/PyTensor C++ Equivalent (Xtensor or direct LibTorch autograd)
 # find_package(xtensor REQUIRED)
 
-add_executable(mobile_llm main.cpp)
+add_executable(mobile_llm main.cpp fast_math.f90)
 
 # Link LibTorch and Eigen
 target_link_libraries(mobile_llm 

@@ -8,6 +8,11 @@
 #include "turboquant.hpp"
 #include "agent.hpp"
 
+// External binding to the native Fortran subroutine for ultra-fast raw math
+extern "C" {
+    void update_hidden_state(int d_model, float decay, float* hidden_state, const float* token_emb);
+}
+
 /**
  * Linear-Time Complexity LLM Layer O(N)
  * Replaces standard O(N^2) Transformer Attention with a Linear Recurrent State.
@@ -35,9 +40,17 @@ public:
             // Simulate embedding lookup (PyTorch C++)
             torch::Tensor token_emb = torch::randn({1, d_model_});
             
-            // Linear Attention / State Space updating
-            // hidden_state = decay * hidden_state + token_emb
-            hidden_state = (0.9 * hidden_state) + token_emb;
+            // Extract raw memory pointers
+            float* state_ptr = hidden_state.data_ptr<float>();
+            const float* emb_ptr = token_emb.data_ptr<float>();
+            
+            // =================================================================
+            // FORTRAN ACCELERATION
+            // Bypassing PyTorch C++ abstraction overhead completely. 
+            // We pass the raw memory pointers directly into the Fortran routine 
+            // for unabstracted SIMD hardware-level execution.
+            // =================================================================
+            update_hidden_state(d_model_, 0.9f, state_ptr, emb_ptr);
             
             // Extract tensor data to std::vector for Eigen quantization
             std::vector<float> state_vec(
