@@ -78,10 +78,12 @@ By passing the `--llama` flag, you can bridge the C++ MobileLLM agent frontend d
 **How It Works:**
 When this flag is active, the engine bypasses the internal LibTorch inference module. Instead, it routes generation requests (along with the 13-tool system prompt) through a translation layer (`LlamaServerAdapter` via `request_llama.py`), which queries a local `llama.cpp` server running at `http://127.0.0.1:8080/completion`.
 
-**The Best of Both Worlds:**
+**The Split-Brain Architecture:**
 This provides the ultimate hybrid architecture: you get the ultra-capable, zero-Python C++ Karpathy-style agent loop with its 13 native OS tools, but powered by the heavily optimized, rock-solid inference of `llama.cpp`. 
 
-The Python translation adapter natively reformats the prompts into `<|im_start|>` chat templates, enabling strict `Thought -> Action -> ActionInput` AutoResearch enforcement for highly intelligent, dense models like **Qwen2.5-1.5B**.
+The system implements a **Dynamic Split-Brain**:
+1. **`--chat` (Conversational Mode):** The C++ backend automatically passes a state flag to the Python adapter, deactivating the aggressive OS Hacker prompt and replacing it with a clean, conversational AI persona.
+2. **`--prompt` (Agent Mode):** The translation adapter natively reformats the prompts into `<|im_start|>` chat templates, enabling strict `Thought -> Action -> ActionInput` AutoResearch enforcement for highly intelligent, dense models like **Qwen2.5-1.5B**.
 
 *Note: Ensure your `llama.cpp` server is running locally on port 8080 before using this mode.*
 
