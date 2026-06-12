@@ -19,17 +19,32 @@ public:
         std::cout << "[AutoResearch] Initializing Deep Research Protocol..." << std::endl;
         std::cout << "[AutoResearch] Drafting execution specifications..." << std::endl;
         
+        std::string tools_desc = 
+            "AVAILABLE TOOLS:\n"
+            "- run_command: Executes a raw bash command (e.g. ActionInput: echo hello)\n"
+            "- read_file: Reads file contents (e.g. ActionInput: /path/to/file)\n"
+            "- write_file: Writes file (e.g. ActionInput: filename content)\n"
+            "- move_file: Moves file (e.g. ActionInput: src dest)\n"
+            "- copy_file: Copies file (e.g. ActionInput: src dest)\n"
+            "- delete_file: Deletes file (e.g. ActionInput: filename)\n"
+            "- list_dir: Lists files in a directory (e.g. ActionInput: /path/to/dir)\n"
+            "- mathematics: Evaluates a Python math expression. Use Python syntax like ** for exponents (e.g. ActionInput: ((1+math.sqrt(5))**10 - (1-math.sqrt(5))**10) / (2**10 * math.sqrt(5)))\n"
+            "- search_web: DuckDuckGo search (e.g. ActionInput: search term)\n"
+            "- fetch_url: cURL a URL (e.g. ActionInput: https://example.com)\n"
+            "- pattern_match: grep file (e.g. ActionInput: pattern file)\n"
+            "- text_parsing: awk file (e.g. ActionInput: '{print $1}' file)\n"
+            "- universal_parse: parses json/csv/xml/bin (e.g. ActionInput: file.json)\n\n"
+            "RULES:\n"
+            "1. You MUST only generate ONE Action per turn. DO NOT generate Final Answer until you see an Observation.\n"
+            "2. Wait for the C++ engine to return an Observation before generating your next Thought.\n";
+            
         // Phase 1: AutoResearch Specification
-        std::string spec_context = "System: Create a detailed, multi-step execution specification. Output 'Specification: [steps]'.\nUser: " + user_prompt;
+        std::string spec_context = "System: Create a detailed execution specification. Output 'Specification: [steps]'.\n" + tools_desc + "User: " + user_prompt;
         
-        // 100% Honest Execution: We directly call the LLM to generate the specification.
-        // Note: Because this custom O(N) architecture is currently untrained (random weights), 
-        // this will output randomized tokens instead of English text.
         std::string specification = llm_.generate(spec_context);
-        
         std::cout << "[AutoResearch] " << specification << std::endl;
         
-        std::string context = "System: You are an AutoResearch agent. Follow this specification strictly:\n" + specification + "\nUser: " + user_prompt + "\n";
+        std::string context = "System: You are an AutoResearch agent. Follow this specification:\n" + specification + "\n" + tools_desc + "\nUser: " + user_prompt + "\n";
         
         int max_iterations = 50; // Deep continuous looping
         for (int i = 0; i < max_iterations; ++i) {
@@ -185,7 +200,8 @@ public:
                     observation += "Error: pattern_match requires 'pattern file' format.\n";
                 }
             } else if (action == "mathematics") {
-                std::string cmd = "echo \"" + action_input + "\" | bc -l";
+                // Use python3 eval for robust math instead of bc
+                std::string cmd = "python3 -c \"import math; print(eval('''" + action_input + "'''))\" 2>&1";
                 FILE* pipe = popen(cmd.c_str(), "r");
                 if (!pipe) {
                     observation += "Error executing mathematics.\n";

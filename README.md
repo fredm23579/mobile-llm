@@ -57,11 +57,11 @@ The LLM isn't just a chatbot; it's a native OS controller equipped with custom C
 8. **`search_web`**: Headless API search querying.
 9. **`fetch_url`**: Headless Mozilla/5.0 web scraping.
 10. **`pattern_match`**: Native `grep` piping.
-11. **`mathematics`**: Boundless arithmetic via `bc -l`.
+11. **`mathematics`**: Boundless arithmetic via native Python3 `eval()`, heavily aligned with LLM expectations (supports `import math` logic natively).
 12. **`text_parsing`**: Complex Unix stream extraction via `awk`.
 13. **`universal_parse`**: Dynamic magic-byte format shifting (parses `.json`, `.csv`, `.xml`, and raw `.bin` hex dumps via `xxd`).
 
-## 🦙 Llama.cpp Server Backend Integration (`--llama`)
+## 🦙 Llama.cpp & Qwen Integration (`--llama`)
 
 While MobileLLM features a highly experimental linear-time inference engine via LibTorch, you may prefer the robust, standard optimization of a conventional `llama.cpp` backend.
 
@@ -79,7 +79,9 @@ By passing the `--llama` flag, you can bridge the C++ MobileLLM agent frontend d
 When this flag is active, the engine bypasses the internal LibTorch inference module. Instead, it routes generation requests (along with the 13-tool system prompt) through a translation layer (`LlamaServerAdapter` via `request_llama.py`), which queries a local `llama.cpp` server running at `http://127.0.0.1:8080/completion`.
 
 **The Best of Both Worlds:**
-This provides the ultimate hybrid architecture: you get the ultra-capable, zero-Python C++ Karpathy-style agent loop with its 13 native OS tools, but powered by the heavily optimized, rock-solid inference of `llama.cpp`.
+This provides the ultimate hybrid architecture: you get the ultra-capable, zero-Python C++ Karpathy-style agent loop with its 13 native OS tools, but powered by the heavily optimized, rock-solid inference of `llama.cpp`. 
+
+The Python translation adapter natively reformats the prompts into `<|im_start|>` chat templates, enabling strict `Thought -> Action -> ActionInput` AutoResearch enforcement for highly intelligent, dense models like **Qwen2.5-1.5B**.
 
 *Note: Ensure your `llama.cpp` server is running locally on port 8080 before using this mode.*
 
