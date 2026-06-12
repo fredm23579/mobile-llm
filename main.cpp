@@ -84,12 +84,24 @@ private:
     std::vector<std::vector<int8_t>> kv_cache_;
 };
 
-int main() {
+int main(int argc, char* argv[]) {
     std::cout << "===========================================" << std::endl;
     std::cout << " LibTorch/Eigen Mobile-Optimized LLM Engine" << std::endl;
     std::cout << " Complexity: O(N) Linear Time (Polynomial) " << std::endl;
     std::cout << " Backends: PyTorch C++, NumPy C++ (Eigen)  " << std::endl;
     std::cout << "===========================================" << std::endl;
+
+    std::string user_prompt = "Analyze the environment and report.";
+    std::string model_path = "model.gguf";
+    bool chat_mode = false;
+
+    // Parse CLI arguments
+    for (int i = 1; i < argc; ++i) {
+        std::string arg = argv[i];
+        if (arg == "--prompt" && i + 1 < argc) user_prompt = argv[++i];
+        else if (arg == "--model" && i + 1 < argc) model_path = argv[++i];
+        else if (arg == "--chat") chat_mode = true;
+    }
 
     try {
         // Force LibTorch to use CPU threads optimized for mobile
@@ -97,14 +109,25 @@ int main() {
 
         int d_model = 256;
         int vocab_size = 32000;
-        std::string mock_model_path = "model.gguf";
         
-        std::cout << "Initializing LibTorch model weights..." << std::endl;
-        LibTorchLinearLLM model(d_model, vocab_size, mock_model_path);
+        std::cout << "Initializing LibTorch model weights from: " << model_path << std::endl;
+        LibTorchLinearLLM model(d_model, vocab_size, model_path);
 
-        // We wrap the LibTorch model in our Agent class for autonomous capabilities
-        // Note: We need a generic wrapper to pass to the Agent
-        std::cout << "\n[Execution Complete] " << model.generate("Initialize Agent Sequence") << std::endl;
+        if (chat_mode) {
+            std::cout << "\n[Interactive Chat Mode Started. Type 'exit' to quit.]\n";
+            std::string input;
+            while (true) {
+                std::cout << "\nUser> ";
+                if (!std::getline(std::cin, input) || input == "exit") break;
+                if (input.empty()) continue;
+                std::cout << "MobileLLM> " << model.generate("User: " + input) << "\n";
+            }
+        } else {
+            // Wrap the LibTorch model in our Agent class for autonomous capabilities
+            Agent agent(model);
+            std::string final_answer = agent.run_autoresearch_loop(user_prompt);
+            std::cout << "\n[Execution Complete]\n" << final_answer << std::endl;
+        }
     } catch (const std::exception& e) {
         std::cerr << "Fatal Error: " << e.what() << std::endl;
         return 1;

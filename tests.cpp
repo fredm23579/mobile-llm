@@ -53,13 +53,23 @@ void test_turboquant_bounds() {
 void test_agent_initialization() {
     std::cout << "[Test] Running ReAct Agent Flow..." << std::endl;
     
-    // A dummy wrapper since we just want to test agent compilation and basic flow
+    // A dummy wrapper to test agent compilation, loop bounds, and string logic
     class DummyLLM {
     public:
-        std::string generate(const std::string& p) { return "Final Answer: Parsed"; }
+        std::string generate(const std::string& p) { 
+            static int calls = 0;
+            if (calls++ == 0) return "Thought: I should use a tool.\nAction: run_command\nActionInput: echo hello";
+            return "Final Answer: Parsed"; 
+        }
     };
-    // Note: In a real test we'd refactor Agent to take a template or interface,
-    // but for now we just verify the headers and basic logic link correctly.
+    
+    DummyLLM dummy;
+    Agent<DummyLLM> agent(dummy);
+    std::string result = agent.run_autoresearch_loop("Do something");
+    
+    // Test Edge Case: Ensure the loop breaks properly on 'Final Answer'
+    assert(result.find("Final Answer:") != std::string::npos);
+    
     std::cout << "  -> PASS: Agent architecture compiles and integrates successfully." << std::endl;
 }
 
