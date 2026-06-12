@@ -84,6 +84,33 @@ private:
     std::vector<std::vector<int8_t>> kv_cache_;
 };
 
+// Translation Adapter for standard HuggingFace models via Llama.cpp server
+class LlamaServerAdapter {
+    bool is_chat_;
+public:
+    LlamaServerAdapter(bool is_chat = false) : is_chat_(is_chat) {}
+    
+    std::string generate(const std::string& prompt) {
+        std::ofstream out("/tmp/llm_prompt.txt");
+        out << prompt;
+        out.close();
+        
+        std::string cmd = "python3 /root/mobile-llm/request_llama.py";
+        if (is_chat_) cmd += " --chat";
+        cmd += " < /tmp/llm_prompt.txt";
+        
+        std::array<char, 128> buffer;
+        std::string result;
+        FILE* pipe = popen(cmd.c_str(), "r");
+        if (!pipe) return "Error";
+        while (fgets(buffer.data(), buffer.size(), pipe) != nullptr) {
+            result += buffer.data();
+        }
+        pclose(pipe);
+        return result;
+    }
+};
+
 int main(int argc, char* argv[]) {
     std::cout << "===========================================" << std::endl;
     std::cout << " LibTorch/Eigen Mobile-Optimized LLM Engine" << std::endl;
@@ -94,6 +121,7 @@ int main(int argc, char* argv[]) {
     std::string user_prompt = "Analyze the environment and report.";
     std::string model_path = "model.gguf";
     bool chat_mode = false;
+    bool llama_mode = false;
 
     // Parse CLI arguments
     for (int i = 1; i < argc; ++i) {
@@ -101,6 +129,7 @@ int main(int argc, char* argv[]) {
         if (arg == "--prompt" && i + 1 < argc) user_prompt = argv[++i];
         else if (arg == "--model" && i + 1 < argc) model_path = argv[++i];
         else if (arg == "--chat") chat_mode = true;
+        else if (arg == "--llama") llama_mode = true;
     }
 
     try {
@@ -110,23 +139,41 @@ int main(int argc, char* argv[]) {
         int d_model = 256;
         int vocab_size = 32000;
         
-        std::cout << "Initializing LibTorch model weights from: " << model_path << std::endl;
-        LibTorchLinearLLM model(d_model, vocab_size, model_path);
-
-        if (chat_mode) {
-            std::cout << "\n[Interactive Chat Mode Started. Type 'exit' to quit.]\n";
-            std::string input;
-            while (true) {
-                std::cout << "\nUser> ";
-                if (!std::getline(std::cin, input) || input == "exit") break;
-                if (input.empty()) continue;
-                std::cout << "MobileLLM> " << model.generate("User: " + input) << "\n";
+        if (llama_mode) {
+            std::cout << "[Translation Layer] Routing inference to local Llama.cpp backend..." << std::endl;
+            LlamaServerAdapter model(chat_mode);
+            if (chat_mode) {
+                std::cout << "\n[Interactive Chat Mode Started. Type 'exit' to quit.]\n";
+                std::string input;
+                while (true) {
+                    std::cout << "\nUser> ";
+                    if (!std::getline(std::cin, input) || input == "exit") break;
+                    if (input.empty()) continue;
+                    std::cout << "MobileLLM> " << model.generate("User: " + input) << "\n";
+                }
+            } else {
+                Agent<LlamaServerAdapter> agent(model);
+                std::string final_answer = agent.run_autoresearch_loop(user_prompt);
+                std::cout << "\n[Execution Complete]\n" << final_answer << std::endl;
             }
         } else {
-            // Wrap the LibTorch model in our Agent class for autonomous capabilities
-            Agent agent(model);
-            std::string final_answer = agent.run_autoresearch_loop(user_prompt);
-            std::cout << "\n[Execution Complete]\n" << final_answer << std::endl;
+            std::cout << "Initializing LibTorch model weights from: " << model_path << std::endl;
+            LibTorchLinearLLM model(d_model, vocab_size, model_path);
+
+            if (chat_mode) {
+                std::cout << "\n[Interactive Chat Mode Started. Type 'exit' to quit.]\n";
+                std::string input;
+                while (true) {
+                    std::cout << "\nUser> ";
+                    if (!std::getline(std::cin, input) || input == "exit") break;
+                    if (input.empty()) continue;
+                    std::cout << "MobileLLM> " << model.generate("User: " + input) << "\n";
+                }
+            } else {
+                Agent<LibTorchLinearLLM> agent(model);
+                std::string final_answer = agent.run_autoresearch_loop(user_prompt);
+                std::cout << "\n[Execution Complete]\n" << final_answer << std::endl;
+            }
         }
     } catch (const std::exception& e) {
         std::cerr << "Fatal Error: " << e.what() << std::endl;
