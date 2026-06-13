@@ -1,14 +1,10 @@
 <div align="center">
-  <img src="assets/banner.png" alt="MobileLLM Banner" width="100%">
-  <br>
-  <p><b>State-of-the-Art O(N) Linear-Time Large Language Model Inference Engine for Mobile Devices.</b></p>
+  <p><b>O(N) Linear-Time Recurrent LLM Inference Engine + ReAct Agent for Linux / Android Termux</b></p>
 
-  [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](#)
   [![C++ Standard](https://img.shields.io/badge/C%2B%2B-17-blue.svg)](https://isocpp.org/)
   [![Fortran](https://img.shields.io/badge/Fortran-2003-purple.svg)](#)
-  [![Platform](https://img.shields.io/badge/Platform-Termux%20%7C%20Android%20%7C%20Linux-orange.svg)](#)
-  [![Complexity](https://img.shields.io/badge/Complexity-O(N)%20Linear-red.svg)](#)
-  [![License](https://img.shields.io/badge/License-MIT-gray.svg)](#)
+  [![Platform](https://img.shields.io/badge/Platform-Linux%20%7C%20Android%20Termux-orange.svg)](#)
+  [![License](https://img.shields.io/badge/License-MIT-gray.svg)](LICENSE)
 </div>
 
 <br>
@@ -45,7 +41,9 @@ The explicit goal of this C++ architecture is to take the heavy mathematical wei
 
 ## 🌟 Core Architecture: O(N) Computational Efficiency
 
-Traditional Transformer LLMs rely on $O(N^2)$ quadratic attention, which rapidly exhausts mobile RAM on long contexts. MobileLLM abandons this in favor of a **Linear Recurrent State-Space** model (similar to Mamba/RWKV). This guarantees $O(N)$ inference speed and a constant $O(1)$ memory footprint per token, allowing multi-gigabyte inference directly on your phone's CPU.
+Traditional Transformer LLMs rely on $O(N^2)$ quadratic attention, which rapidly exhausts mobile RAM on long contexts. The **internal** `LibTorchLinearLLM` engine uses a Linear Recurrent State-Space design (similar to Mamba/RWKV) that is $O(N)$ in time and $O(1)$ in memory per token.
+
+> **Important:** The internal engine compiles and the recurrent math kernel passes all unit tests, but **no trained weights exist for this architecture**. Running without an external backend produces random logits, not language. For actual LLM responses, use the `--llama` / `--backend` flags to route to a llama.cpp server, Ollama, or HuggingFace. See [Known Limitations](#known-limitations).
 
 ```mermaid
 graph TD
@@ -62,11 +60,11 @@ graph TD
 
 ## 🚀 Key Features
 
-*   **Zero-Python Execution:** The entire engine runs natively. No bloated interpreters, no memory leaks.
-*   **Fortran 2003 Acceleration:** Critical inner-loop mathematical decay functions are passed via raw memory pointers directly to `!DIR$ SIMD` optimized Fortran binaries, bypassing C++ abstraction overhead.
-*   **TurboQuant Compression:** Implements randomized orthogonal rotations via Eigen3 to squash 32-bit float vector spaces into strictly bounded `[-127, 127]` INT8 arrays, drastically slashing KV-cache constraints.
-*   **GGUF v3 Binary Parser:** Capable of scanning memory-mapped `model.gguf` files, stripping out metadata, and mounting multi-gigabyte Tensor offsets natively.
-*   **Infinite AutoResearch Loop (Karpathy-Style):** Automatically generates step-by-step specifications and continuously self-corrects against observations until the final objective is reached.
+*   **Fortran 2003 Acceleration:** Critical inner-loop recurrent decay math passes raw memory pointers into a `!DIR$ SIMD`-annotated Fortran subroutine. Numerically stable across 1,000 recurrent steps (verified by unit tests).
+*   **TurboQuant Compression:** Eigen3-based INT8 vector quantization that clamps float32 state vectors into `[-127, 127]`. Passes bounds verification tests.
+*   **GGUF v2/v3 Metadata Parser:** Reads magic bytes, version, and metadata key-value pairs from a `.gguf` file. **Tensor data extraction is not yet implemented** — `load_tensor` returns zero/random tensors. See `gguf_parser.hpp` TODOs.
+*   **ReAct Agent Loop (13 tools):** C++ agent that dispatches LLM responses as tool calls (bash, file I/O, math, web fetch, grep, awk, JSON/CSV/XML parsing) and feeds observations back. Works with any external backend.
+*   **Python adapter for external backends:** `request_llama.py` bridges the C++ agent to llama.cpp, Ollama, or HuggingFace via REST. The C++ layer calls it via `popen("python3 request_llama.py ...")` — Python is used here, not eliminated.
 
 <details>
 <summary><b>🛠️ The 13-Tool Termux Arsenal (Click to Expand)</b></summary>
@@ -123,8 +121,8 @@ ollama pull phi3
 ./mobile_llm --backend ollama --model phi3 --prompt "Analyze the filesystem."
 ```
 
-### 3. Cloud HuggingFace Inference API
-Because the engine routes directly to `api-inference.huggingface.co`, you have access to thousands of models. You must export your HuggingFace token first:
+### 3. Cloud HuggingFace Inference Providers
+The engine routes to `router.huggingface.co/v1/chat/completions` (the Inference Providers OpenAI-compatible endpoint). You must export your HuggingFace token first:
 ```bash
 export HF_TOKEN="your_token_here"
 
@@ -142,7 +140,7 @@ export HF_TOKEN="your_token_here"
 ```
 
 **How It Works:**
-The engine bypasses internal LibTorch inference and routes requests through a highly modular translation layer (`request_llama.py`). It dynamically constructs `<|im_start|>` ReAct structures and negotiates raw JSON-REST APIs for port `8080` (llama.cpp), port `11434` (Ollama), or the HuggingFace URL endpoints, injecting system prompts securely into the stream.
+The C++ binary writes the prompt to `/tmp/llm_prompt.txt` and calls `python3 request_llama.py` via `popen()`. The Python script wraps the prompt in `<|im_start|>` chat format and posts it to the appropriate REST endpoint: port `8080` (llama.cpp), port `11434` (Ollama), or `router.huggingface.co` (HuggingFace).
 
 ## 🦙 Llama.cpp & Qwen Integration (`--llama`)
 
@@ -171,45 +169,62 @@ wget -q --show-progress "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/
 
 ### Execution Examples
 
-<details>
-<summary><b>💬 Conversational Chat Mode</b></summary>
-<br>
+**Conversational Chat Mode:**
 
 ```bash
 ./mobile_llm --llama --chat
 ```
-*Output:*
-```text
-[Translation Layer] Routing inference to local Llama.cpp backend...
-[Interactive Chat Mode Started. Type 'exit' to quit.]
-User> What can you do?
-MobileLLM> As an AI language model, I can do several things:
-1. Generate text: I can create written content such as articles...
-```
-</details>
 
-<details>
-<summary><b>🤖 Autonomous OS Agent Mode (Math Evaluation)</b></summary>
-<br>
+Actual output (Qwen2.5-1.5B-Instruct-Q4_K_M, 2026-06-12):
+
+```text
+===========================================
+ LibTorch/Eigen Mobile-Optimized LLM Engine
+ Complexity: O(N) Linear Time (Polynomial) 
+ Backends: PyTorch C++, NumPy C++ (Eigen)  
+===========================================
+[Translation Layer] Routing inference to backend: llama.cpp
+
+[Interactive Chat Mode Started. Type 'exit' to quit.]
+
+User> What is 2+2?
+MobileLLM> 2 + 2 equals 4.
+
+User> exit
+```
+
+**Autonomous Agent Mode:**
 
 ```bash
 ./mobile_llm --llama --prompt "Calculate the 10th Fibonacci number"
 ```
-*Output:*
+
+Actual output (Qwen2.5-1.5B-Instruct-Q4_K_M, 2026-06-12):
+
 ```text
-[Translation Layer] Routing inference to local Llama.cpp backend...
+===========================================
+ LibTorch/Eigen Mobile-Optimized LLM Engine
+ Complexity: O(N) Linear Time (Polynomial) 
+ Backends: PyTorch C++, NumPy C++ (Eigen)  
+===========================================
+[Translation Layer] Routing inference to backend: llama.cpp
 [AutoResearch] Initializing Deep Research Protocol...
 [AutoResearch] Drafting execution specifications...
 [AutoResearch] Thought: To calculate the 10th Fibonacci number, I need to use the mathematics tool to evaluate the Python math expression for the Fibonacci sequence.
 Action: mathematics
 ActionInput: ((1+math.sqrt(5))**10 - (1-math.sqrt(5))**10) / (2**10 * math.sqrt(5))
 
+
+[AutoResearch] Iteration 1/50 | Generating thought/action...
 [Agent] Parsed Action: mathematics | Input: ((1+math.sqrt(5))**10 - (1-math.sqrt(5))**10) / (2**10 * math.sqrt(5))
 [Agent] Observation: 55.000000000000014
 
+[AutoResearch] Iteration 2/50 | Generating thought/action...
+[AutoResearch] Protocol Complete.
+
 [Execution Complete]
+Final Answer: Thought: The 10th Fibonacci number is 55.000000000000014.
 ```
-</details>
 
 *Note: Ensure your `llama.cpp` server is running locally on port 8080 before using this mode.*
 
@@ -247,28 +262,64 @@ To ensure mathematical stability and memory bounds are strictly enforced on your
 ./mobile_llm_tests
 ```
 
-*Expected Output:*
+Actual output:
+
 ```text
+===========================================
+ MobileLLM Robustness Test Suite           
+===========================================
 [Test] Running Fortran Decay Math Stability...
   -> PASS: Fortran math is stable over 1000 recurrent steps.
 [Test] Running TurboQuant Eigen Bounds Verification...
   -> PASS: TurboQuant successfully bounds vectors to INT8 space.
 [Test] Running ReAct Agent Flow...
+[AutoResearch] Initializing Deep Research Protocol...
+[AutoResearch] Drafting execution specifications...
+[AutoResearch] Thought: I should use a tool.
+Action: run_command
+ActionInput: echo hello
+
+[AutoResearch] Iteration 1/50 | Generating thought/action...
+[AutoResearch] Protocol Complete.
   -> PASS: Agent architecture compiles and integrates successfully.
+[Test] Running CLI Flag Parsing Verification...
+  -> PASS: CLI parsing correctly assigns flags.
+[Test] Running LlamaServerAdapter Initialization...
+  -> PASS: LlamaServerAdapter initializes correctly.
+
+ALL TESTS PASSED. Engine is mathematically robust.
 ```
 
 ## 📂 Directory Structure
 
 ```text
 mobile-llm/
-├── CMakeLists.txt      # Master build manifest
-├── main.cpp            # PyTorch C++ (LibTorch) execution loop
-├── fast_math.f90       # Bare-metal Fortran SIMD array processor
-├── turboquant.hpp      # Eigen3-powered vector quantization
-├── gguf_parser.hpp     # Deep binary memory-mapping for weights
-├── tokenizer.hpp       # Native Byte-Pair Encoding logic
-└── agent.hpp           # Termux OS shell-execution bridge
+├── CMakeLists.txt              # Build manifest (requires LibTorch + Eigen3)
+├── main.cpp                    # CLI entry point + LlamaServerAdapter + LibTorchLinearLLM scaffold
+├── fast_math.f90               # Fortran SIMD recurrent decay kernel
+├── turboquant.hpp              # Eigen3 INT8 vector quantization
+├── gguf_parser.hpp             # GGUF v2/v3 metadata parser (tensor extraction: TODO)
+├── tokenizer.hpp               # BPE tokenizer stub (mock vocab only)
+├── agent.hpp                   # ReAct agent loop + 13 OS tools
+├── llama_adapter.hpp           # LlamaServerAdapter (extracted class, used by tests)
+├── request_llama.py            # Python REST adapter for llama.cpp / Ollama / HuggingFace
+├── tests.cpp                   # Unit test suite
+├── INVARIANTS.md               # Truthful Build Doctrine (repo invariants)
+├── USAGE.md                    # CLI usage reference
+├── TRAINING_GUIDE.md           # Design notes for training the internal architecture
+└── .github/workflows/cmake.yml # CI: build + test on ubuntu-latest
 ```
+
+## Known Limitations
+
+- **No trained weights**: The internal `LibTorchLinearLLM` produces random logits. No `.gguf` weights exist for this architecture.
+- **GGUF tensor extraction not implemented**: `gguf_parser.hpp::load_tensor` returns zeros. Only metadata is parsed. See `// TODO` in source.
+- **BPE tokenizer is a stub**: `tokenizer.hpp` has a 5-word mock vocab. Real tokenization requires `vocab.json` from a trained model. No `vocab.json` is included.
+- **External backends required for real LLM output**: llama.cpp server, Ollama, or HuggingFace credentials must be set up separately.
+- **Ollama not bundled**: Must install Ollama and run `ollama serve` before using `--backend ollama`.
+- **`search_web` fragility**: Depends on DuckDuckGo HTML structure; may break without notice.
+- **LibTorch on ARM64/Termux**: `pip install torch` CPU wheels may not exist for all aarch64 targets. May require building from source.
+- **LAUNCH_KIT.md not for technical use**: Contains social media post drafts, not documentation.
 
 ## 🛡️ License
 

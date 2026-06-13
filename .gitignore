@@ -1,0 +1,19 @@
+# CMake / build artifacts (never commit binaries or caches)
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+build/
+*.o
+*.o.d
+
+# Compiled binaries
+mobile_llm
+mobile_llm_tests
+
+# Vendored / external libraries
+ITensor/
+
+# Model weights
+*.gguf
+vocab.json

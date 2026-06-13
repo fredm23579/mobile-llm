@@ -40,6 +40,7 @@ public:
         
         // Step 2: O(N) Forward Pass (Polynomial complexity: degree 1)
         for (int token : tokens) {
+            (void)token; // Suppress unused variable warning under -Werror
             // Simulate embedding lookup (PyTorch C++)
             torch::Tensor token_emb = torch::randn({1, d_model_});
             

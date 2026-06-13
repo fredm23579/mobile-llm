@@ -72,18 +72,21 @@ public:
         std::string context = "System: You are an AutoResearch agent. Follow this specification:\n" + specification + "\n" + tools_desc + "\nUser: " + user_prompt + "\n";
         
         int max_iterations = 50; // Deep continuous looping
+        bool has_observation = false;
         for (int i = 0; i < max_iterations; ++i) {
             std::cout << "\n[AutoResearch] Iteration " << (i+1) << "/" << max_iterations << " | Generating thought/action..." << std::endl;
-            
+
             // Run raw $O(N)$ linear-time inference through the LibTorch/Fortran core
             std::string response = llm_.generate(context);
-            
-            // Note: Because we are currently running without real model.gguf weights, 
-            // the LibTorch layer will just return randomized tokens. 
-            // If it fails to output an action, we forcefully terminate the loop to prevent infinite token bleeding.
+
             if (response.find("Action:") == std::string::npos && response.find("Final Answer:") == std::string::npos) {
-                std::cout << "[Agent Warning] LLM generated invalid ReAct formatting (expected Action or Final Answer)." << std::endl;
-                response = "Final Answer: Error - Invalid syntax from LLM generator.";
+                if (has_observation && !response.empty()) {
+                    // Model answered directly after seeing an Observation — treat as Final Answer.
+                    response = "Final Answer: " + response;
+                } else {
+                    std::cout << "[Agent Warning] LLM generated invalid ReAct formatting (expected Action or Final Answer)." << std::endl;
+                    response = "Final Answer: Error - Invalid syntax from LLM generator.";
+                }
             }
             
             context += response;
@@ -338,6 +341,7 @@ public:
                 observation += "Unknown C++ Exception caught.\n";
             }
             context += observation;
+            has_observation = true;
             std::cout << "[Agent] " << observation;
         }
         

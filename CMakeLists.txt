@@ -34,9 +34,9 @@ target_link_libraries(mobile_llm_tests
     Eigen3::Eigen
 )
 
-# Termux / Mobile Architectures Optimization
-target_compile_options(mobile_llm PRIVATE -O3 -march=native -ffast-math)
+# Termux / Mobile Architectures Optimization & Strict Invariants
+target_compile_options(mobile_llm PRIVATE -O3 -march=native -ffast-math -Wall -Wextra -Werror)
 set_property(TARGET mobile_llm PROPERTY CXX_STANDARD 17)
 
-target_compile_options(mobile_llm_tests PRIVATE -O3 -march=native -ffast-math)
+target_compile_options(mobile_llm_tests PRIVATE -O3 -march=native -ffast-math -Wall -Wextra -Werror)
 set_property(TARGET mobile_llm_tests PROPERTY CXX_STANDARD 17)

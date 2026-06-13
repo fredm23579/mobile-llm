@@ -32,8 +32,19 @@ elif backend == "ollama":
     url = "http://127.0.0.1:11434/api/generate"
     data = json.dumps({"model": model_name, "prompt": formatted_prompt, "stream": False, "raw": True, "options": {"temperature": 0.0, "stop": stop_tokens}}).encode('utf-8')
 elif backend == "huggingface":
-    url = f"https://api-inference.huggingface.co/models/{model_name}"
-    data = json.dumps({"inputs": formatted_prompt, "parameters": {"temperature": 0.001, "stop": stop_tokens, "return_full_text": False}}).encode('utf-8')
+    # api-inference.huggingface.co was retired; the Inference Providers router
+    # exposes an OpenAI-compatible chat completions API instead.
+    url = "https://router.huggingface.co/v1/chat/completions"
+    data = json.dumps({
+        "model": model_name,
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": prompt},
+        ],
+        "temperature": 0.0,
+        "max_tokens": 256,
+        "stop": stop_tokens,
+    }).encode('utf-8')
     hf_token = os.environ.get("HF_TOKEN")
     if hf_token: headers["Authorization"] = f"Bearer {hf_token}"
 
@@ -44,7 +55,7 @@ try:
         
         if backend == "llama.cpp": text = result.get('content', '')
         elif backend == "ollama": text = result.get('response', '')
-        elif backend == "huggingface": text = result[0].get('generated_text', '') if isinstance(result, list) else result.get('generated_text', '')
+        elif backend == "huggingface": text = result["choices"][0]["message"]["content"]
             
         if force_thought:
             text = "Thought: " + text
