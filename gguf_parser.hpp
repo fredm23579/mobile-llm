@@ -6,8 +6,8 @@
 #include <vector>
 #include <string>
 #include <stdexcept>
-#include <torch/torch.h>
 #include <cstdint>
+#include <unordered_map>
 
 enum class GGUFValueType : uint32_t {
     UINT8 = 0,
@@ -83,8 +83,11 @@ public:
                 file_.read(reinterpret_cast<char*>(info.dimensions.data()), info.n_dimensions * sizeof(uint64_t));
                 file_.read(reinterpret_cast<char*>(&info.type), sizeof(info.type));
                 file_.read(reinterpret_cast<char*>(&info.offset), sizeof(info.offset));
-                tensors_.push_back(info);
+                tensors_[info.name] = info;
             }
+
+            uint64_t current_pos = file_.tellg();
+            data_offset_ = (current_pos + alignment_ - 1) / alignment_ * alignment_;
         } catch (const std::exception& e) {
             std::cerr << "[GGUF Error] Parsing failed: " << e.what() << std::endl;
             is_valid_ = false;
@@ -98,17 +101,31 @@ public:
         if (file_.is_open()) file_.close();
     }
 
-    // Load a specific named tensor from the GGUF file into a LibTorch tensor
-    torch::Tensor load_tensor(const std::string& tensor_name, std::vector<int64_t> expected_shape) {
+    // Load a specific named tensor from the GGUF file
+    std::vector<float> load_tensor(const std::string& tensor_name, uint64_t expected_elements) {
         if (!is_valid_) {
             // Fallback to random weights if no real model is mounted
-            return torch::randn(expected_shape, torch::requires_grad(false));
+            return std::vector<float>(expected_elements, 0.1f);
         }
 
-        // TODO: Seek to tensor offset, read raw bytes, cast to float16/int8, and convert to torch::Tensor
-        // For scaffolding, return zeroes to represent loaded state
-        std::cout << "[GGUF] Loaded tensor: " << tensor_name << " (Shape matched)" << std::endl;
-        return torch::zeros(expected_shape, torch::requires_grad(false));
+        auto it = tensors_.find(tensor_name);
+        if (it == tensors_.end()) {
+            throw std::runtime_error("Tensor not found in GGUF: " + tensor_name);
+        }
+        const GGUFTensorInfo& target_info = it->second;
+
+        file_.clear();
+        file_.seekg(data_offset_ + target_info.offset, std::ios::beg);
+
+        std::vector<float> tensor(expected_elements);
+        if (target_info.type == 0) { // F32
+            file_.read(reinterpret_cast<char*>(tensor.data()), expected_elements * sizeof(float));
+        } else {
+            // For other types, fallback to zeroes for now
+            std::fill(tensor.begin(), tensor.end(), 0.0f);
+        }
+
+        return tensor;
     }
 
 private:
@@ -118,8 +135,9 @@ private:
     uint32_t version_ = 0;
     uint64_t tensor_count_ = 0;
     uint64_t metadata_kv_count_ = 0;
-    std::vector<GGUFTensorInfo> tensors_;
+    std::unordered_map<std::string, GGUFTensorInfo> tensors_;
     uint64_t alignment_ = 32;
+    uint64_t data_offset_ = 0;
 
     std::string read_string() {
         uint64_t length;

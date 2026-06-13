@@ -2,35 +2,29 @@
 #include <vector>
 #include <string>
 
-// LibTorch: C++ equivalent of PyTorch
-#include <torch/torch.h>
-
-#include "turboquant.hpp"
 #include "agent.hpp"
 #include "gguf_parser.hpp"
 #include "tokenizer.hpp"
+#include "llama_adapter.hpp"
 
-// External binding to the native Fortran subroutine for ultra-fast raw math
-extern "C" {
-    void update_hidden_state(int d_model, float decay, float* hidden_state, const float* token_emb);
-}
+// Fortran math dependency removed in favor of native C++ inline implementation
 
 /**
  * Linear-Time Complexity LLM Layer O(N)
  * Replaces standard O(N^2) Transformer Attention with a Linear Recurrent State.
- * Utilizes LibTorch (PyTorch C++) for autograd and hardware acceleration.
+ * Native C++ implementation without LibTorch.
  */
-class LibTorchLinearLLM {
+class NativeLinearLLM {
 public:
-    LibTorchLinearLLM(int d_model, int vocab_size, const std::string& model_path) 
+    NativeLinearLLM(int d_model, int vocab_size, const std::string& model_path) 
         : d_model_(d_model), vocab_size_(vocab_size), 
-          quantizer_(d_model), parser_(model_path), tokenizer_("vocab.json") {
+          parser_(model_path), tokenizer_("vocab.json") {
         
-        // PyTorch C++ Equivalents using GGUF Parser
-        W_out = parser_.load_tensor("output.weight", {d_model_, vocab_size_});
+        // Native C++ Equivalents using GGUF Parser
+        W_out = parser_.load_tensor("output.weight", d_model_ * vocab_size_);
         
         // Initialize hidden state tensor
-        hidden_state = torch::zeros({1, d_model_});
+        hidden_state.assign(d_model_, 0.0f);
     }
 
     std::string generate(const std::string& prompt) {
@@ -41,58 +35,53 @@ public:
         // Step 2: O(N) Forward Pass (Polynomial complexity: degree 1)
         for (int token : tokens) {
             (void)token; // Suppress unused variable warning under -Werror
-            // Simulate embedding lookup (PyTorch C++)
-            torch::Tensor token_emb = torch::randn({1, d_model_});
+            // Simulate embedding lookup (Native C++)
+            std::vector<float> token_emb(d_model_, 0.1f);
             
             // Extract raw memory pointers
-            float* state_ptr = hidden_state.data_ptr<float>();
-            const float* emb_ptr = token_emb.data_ptr<float>();
+            float* state_ptr = hidden_state.data();
+            const float* emb_ptr = token_emb.data();
             
             // =================================================================
-            // FORTRAN ACCELERATION
-            // Bypassing PyTorch C++ abstraction overhead completely. 
-            // We pass the raw memory pointers directly into the Fortran routine 
-            // for unabstracted SIMD hardware-level execution.
+            // Native C++ Recurrent State Update
             // =================================================================
-            update_hidden_state(d_model_, 0.9f, state_ptr, emb_ptr);
-            
-            // Extract tensor data to std::vector for Eigen quantization
-            std::vector<float> state_vec(
-                hidden_state.data_ptr<float>(), 
-                hidden_state.data_ptr<float>() + d_model_
-            );
-            
-            // Compress using TurboQuant (NumPy/Eigen equivalent)
-            auto compressed_state = quantizer_.quantize(state_vec);
-            kv_cache_.push_back(compressed_state);
+            float decay = 0.9f;
+            for (int k = 0; k < d_model_; ++k) {
+                state_ptr[k] = state_ptr[k] * decay + emb_ptr[k] * (1.0f - decay);
+            }
         }
 
         // Project hidden state to vocabulary distribution
-        torch::Tensor logits = torch::matmul(hidden_state, W_out);
-        int predicted_token = logits.argmax(1).item<int>();
+        int predicted_token = 0;
+        float max_val = -1e9;
+        for (int i = 0; i < vocab_size_; ++i) {
+            float val = 0.0f;
+            for (int j = 0; j < d_model_; ++j) {
+                val += hidden_state[j] * W_out[j * vocab_size_ + i];
+            }
+            if (val > max_val) {
+                max_val = val;
+                predicted_token = i;
+            }
+        }
         
-        return "LibTorch generated response (Token: " + std::to_string(predicted_token) + ")";
+        return "Native generated response (Token: " + std::to_string(predicted_token) + ")";
     }
 
 private:
     int d_model_;
     int vocab_size_;
-    torch::Tensor W_out;
-    torch::Tensor hidden_state;
-    tq::TurboQuant quantizer_;
+    std::vector<float> W_out;
+    std::vector<float> hidden_state;
     GGUFParser parser_;
     BPETokenizer tokenizer_;
-    std::vector<std::vector<int8_t>> kv_cache_;
 };
-
-// Translation Adapter for standard HuggingFace models via Llama.cpp server or Ollama
-#include "llama_adapter.hpp"
 
 int main(int argc, char* argv[]) {
     std::cout << "===========================================" << std::endl;
-    std::cout << " LibTorch/Eigen Mobile-Optimized LLM Engine" << std::endl;
+    std::cout << " Native C++ Mobile-Optimized LLM Engine" << std::endl;
     std::cout << " Complexity: O(N) Linear Time (Polynomial) " << std::endl;
-    std::cout << " Backends: PyTorch C++, NumPy C++ (Eigen)  " << std::endl;
+    std::cout << " Backends: Native C++, NumPy C++ (Eigen)  " << std::endl;
     std::cout << "===========================================" << std::endl;
 
     Config config = parse_cli(argc, const_cast<const char**>(argv));
@@ -103,15 +92,12 @@ int main(int argc, char* argv[]) {
     bool llama_mode = config.llama_mode;
 
     try {
-        // Force LibTorch to use CPU threads optimized for mobile
-        torch::set_num_threads(4);
-
         int d_model = 256;
         int vocab_size = 32000;
         
         if (llama_mode) {
-            std::cout << "[Translation Layer] Routing inference to backend: " << backend << std::endl;
-            LlamaServerAdapter model(chat_mode, backend, model_path);
+            std::cout << "[Translation Layer] Routing inference to local Llama backend" << std::endl;
+            LlamaCppEngine model(model_path, chat_mode);
             if (chat_mode) {
                 std::cout << "\n[Interactive Chat Mode Started. Type 'exit' to quit.]\n";
                 std::string input;
@@ -122,13 +108,13 @@ int main(int argc, char* argv[]) {
                     std::cout << "MobileLLM> " << model.generate("User: " + input) << "\n";
                 }
             } else {
-                Agent<LlamaServerAdapter> agent(model);
+                Agent<LlamaCppEngine> agent(model);
                 std::string final_answer = agent.run_autoresearch_loop(user_prompt);
                 std::cout << "\n[Execution Complete]\n" << final_answer << std::endl;
             }
         } else {
-            std::cout << "Initializing LibTorch model weights from: " << model_path << std::endl;
-            LibTorchLinearLLM model(d_model, vocab_size, model_path);
+            std::cout << "Initializing Native model weights from: " << model_path << std::endl;
+            NativeLinearLLM model(d_model, vocab_size, model_path);
 
             if (chat_mode) {
                 std::cout << "\n[Interactive Chat Mode Started. Type 'exit' to quit.]\n";
@@ -140,7 +126,7 @@ int main(int argc, char* argv[]) {
                     std::cout << "MobileLLM> " << model.generate("User: " + input) << "\n";
                 }
             } else {
-                Agent<LibTorchLinearLLM> agent(model);
+                Agent<NativeLinearLLM> agent(model);
                 std::string final_answer = agent.run_autoresearch_loop(user_prompt);
                 std::cout << "\n[Execution Complete]\n" << final_answer << std::endl;
             }

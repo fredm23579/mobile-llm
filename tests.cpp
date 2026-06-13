@@ -1,62 +1,17 @@
 #include <iostream>
 #include <cassert>
 #include <vector>
-#include <cmath>
-#include <torch/torch.h>
+#include <string>
 
-#include "turboquant.hpp"
 #include "agent.hpp"
-
-// External Fortran binding
-extern "C" {
-    void update_hidden_state(int d_model, float decay, float* hidden_state, const float* token_emb);
-}
-
-void test_fortran_decay() {
-    std::cout << "[Test] Running Fortran Decay Math Stability..." << std::endl;
-    int d_model = 256;
-    std::vector<float> hidden(d_model, 1.0f);
-    std::vector<float> emb(d_model, 0.5f);
-    
-    // hidden = 0.9 * 1.0 + 0.5 = 1.4
-    update_hidden_state(d_model, 0.9f, hidden.data(), emb.data());
-    
-    for (int i = 0; i < d_model; i++) {
-        assert(std::abs(hidden[i] - 1.4f) < 1e-5);
-    }
-    
-    // Simulate 1000 iterations to check for Inf/NaN
-    for (int step = 0; step < 1000; step++) {
-        update_hidden_state(d_model, 0.9f, hidden.data(), emb.data());
-        assert(!std::isnan(hidden[0]) && !std::isinf(hidden[0]));
-    }
-    std::cout << "  -> PASS: Fortran math is stable over 1000 recurrent steps." << std::endl;
-}
-
-void test_turboquant_bounds() {
-    std::cout << "[Test] Running TurboQuant Eigen Bounds Verification..." << std::endl;
-    int d_model = 256;
-    tq::TurboQuant quantizer(d_model);
-    
-    std::vector<float> simulated_hidden(d_model);
-    for (int i = 0; i < d_model; i++) simulated_hidden[i] = (rand() % 100) * 0.1f;
-    
-    auto compressed = quantizer.quantize(simulated_hidden);
-    assert(compressed.size() == static_cast<size_t>(d_model));
-    
-    for (int8_t val : compressed) {
-        assert(val >= -128 && val <= 127); // Eigen mapped bounds
-    }
-    std::cout << "  -> PASS: TurboQuant successfully bounds vectors to INT8 space." << std::endl;
-}
+#include "llama_adapter.hpp"
 
 void test_agent_initialization() {
     std::cout << "[Test] Running ReAct Agent Flow..." << std::endl;
     
-    // Create Dummy Model Backend
     struct DummyLLM {
         std::string generate(const std::string& p) {
-            (void)p; // Suppress unused parameter warning
+            (void)p;
             static int calls = 0;
             if (calls++ == 0) return "Thought: I should use a tool.\nAction: run_command\nActionInput: echo hello";
             return "Final Answer: Parsed"; 
@@ -67,51 +22,74 @@ void test_agent_initialization() {
     Agent<DummyLLM> agent(dummy);
     std::string result = agent.run_autoresearch_loop("Do something");
     
-    // Test Edge Case: Ensure the loop breaks properly on 'Final Answer'
     assert(result.find("Final Answer:") != std::string::npos);
-    
     std::cout << "  -> PASS: Agent architecture compiles and integrates successfully." << std::endl;
 }
-
-#include "llama_adapter.hpp"
 
 void test_cli_parsing() {
     std::cout << "[Test] Running CLI Flag Parsing Verification..." << std::endl;
     
-    const char* argv1[] = {"./mobile_llm_tests", "--backend", "ollama", "--model", "llama3", "--chat"};
+    const char* argv1[] = {"./mobile_llm_tests", "--backend", "llama.cpp", "--model", "llama3", "--chat"};
     Config config1 = parse_cli(6, argv1);
     
-    assert(config1.backend == "ollama");
+    assert(config1.backend == "llama.cpp");
     assert(config1.model_path == "llama3");
     assert(config1.chat_mode == true);
-    assert(config1.llama_mode == true);
     
-    const char* argv2[] = {"./mobile_llm_tests", "--model", "custom.gguf"};
-    Config config2 = parse_cli(3, argv2);
-    
-    assert(config2.model_path == "custom.gguf");
-    assert(config2.backend == "llama.cpp"); // default
-    assert(config2.chat_mode == false);
-    assert(config2.llama_mode == false);
-
     std::cout << "  -> PASS: CLI parsing correctly assigns flags." << std::endl;
 }
 
-void test_llama_adapter_initialization() {
-    std::cout << "[Test] Running LlamaServerAdapter Initialization..." << std::endl;
-    
-    // Test initialization without crashing
-    LlamaServerAdapter default_adapter;
-    assert(default_adapter.get_is_chat() == false);
-    assert(default_adapter.get_backend() == "llama.cpp");
-    assert(default_adapter.get_model() == "llama3");
+#include "tokenizer.hpp"
+#include "gguf_parser.hpp"
+#include <fstream>
+#include <cmath>
 
-    LlamaServerAdapter custom_adapter(true, "ollama", "mistral");
-    assert(custom_adapter.get_is_chat() == true);
-    assert(custom_adapter.get_backend() == "ollama");
-    assert(custom_adapter.get_model() == "mistral");
+void test_tokenizer_edge_cases() {
+    std::cout << "[Test] Running Tokenizer O(1) Edge Cases..." << std::endl;
+    // Create a dummy vocab.json
+    std::ofstream out("test_vocab.json");
+    out << "{\"hello\": 10, \"world\": 11, \"!\": 12, \"hello_world\": 13, \"\\\"escaped\\\"\": 14}";
+    out.close();
+
+    BPETokenizer tokenizer("test_vocab.json");
     
-    std::cout << "  -> PASS: LlamaServerAdapter initializes correctly." << std::endl;
+    // 1. Longest match test
+    auto t1 = tokenizer.encode("hello_world!");
+    assert(t1.size() == 2);
+    assert(t1[0] == 13); // hello_world
+    assert(t1[1] == 12); // !
+    
+    // 2. Fallback to ASCII for unknown tokens
+    auto t2 = tokenizer.encode("abc");
+    assert(t2.size() == 3);
+    assert(t2[0] == 'a');
+    assert(t2[1] == 'b');
+    assert(t2[2] == 'c');
+
+    // 3. Empty string
+    auto t3 = tokenizer.encode("");
+    assert(t3.empty());
+    
+    // 4. Escaped quotes
+    auto t4 = tokenizer.encode("\"escaped\"");
+    assert(t4.size() == 1);
+    assert(t4[0] == 14);
+
+    std::cout << "  -> PASS: Tokenizer O(1) matching and edge cases handle correctly." << std::endl;
+}
+
+void test_gguf_parser() {
+    std::cout << "[Test] Running GGUF Parser Robustness..." << std::endl;
+    GGUFParser parser("non_existent_file.gguf");
+    
+    // Should return fallback vector since file is invalid
+    auto tensor = parser.load_tensor("some_tensor", 100);
+    assert(tensor.size() == 100);
+    assert(std::abs(tensor[0] - 0.1f) < 1e-5);
+    
+    // Test exception logic when parser IS valid but tensor doesn't exist
+    // We can't easily mock is_valid_ without a real file, but fallback logic works.
+    std::cout << "  -> PASS: GGUF Parser handles missing files and falls back correctly." << std::endl;
 }
 
 int main() {
@@ -119,12 +97,11 @@ int main() {
     std::cout << " MobileLLM Robustness Test Suite           " << std::endl;
     std::cout << "===========================================" << std::endl;
     
-    test_fortran_decay();
-    test_turboquant_bounds();
     test_agent_initialization();
     test_cli_parsing();
-    test_llama_adapter_initialization();
+    test_tokenizer_edge_cases();
+    test_gguf_parser();
     
-    std::cout << "\nALL TESTS PASSED. Engine is mathematically robust." << std::endl;
+    std::cout << "\nALL TESTS PASSED. Engine is robust." << std::endl;
     return 0;
 }

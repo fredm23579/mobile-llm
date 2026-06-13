@@ -151,8 +151,18 @@ public:
                 } else if (action == "search_web") {
                     std::array<char, 128> buffer;
                     std::string result;
-                    std::string query = "https://html.duckduckgo.com/html/?q=" + action_input;
-                    std::string cmd = "curl -s " + escape_shell_arg(query) + " | grep -oP '(?<=class=\"result__snippet\">).*?(?=</a>)' | head -n 3 2>&1";
+                    std::string py_script = "import sys, json, urllib.request, urllib.parse\\n"
+                                            "try:\\n"
+                                            "  q=sys.argv[1]\\n"
+                                            "  req=urllib.request.Request(f'https://en.wikipedia.org/w/api.php?action=opensearch&search={urllib.parse.quote(q)}&limit=3&format=json', headers={'User-Agent':'Mozilla/5.0'})\\n"
+                                            "  res=json.loads(urllib.request.urlopen(req).read())\\n"
+                                            "  if len(res) > 2 and res[2]:\\n"
+                                            "    print('\\n'.join([x for x in res[2] if x]))\\n"
+                                            "  else:\\n"
+                                            "    print('No results found.')\\n"
+                                            "except Exception as e:\\n"
+                                            "  print('Error:', e)";
+                    std::string cmd = "python3 -c \"" + py_script + "\" " + escape_shell_arg(action_input) + " 2>&1";
                     FILE* pipe = popen(cmd.c_str(), "r");
                     if (!pipe) {
                         observation += "Error executing web search.\n";
