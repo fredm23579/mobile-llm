@@ -1,5 +1,11 @@
 # ⚡ MobileLLM Engine
 
+## 🛡️ Integrity Statement
+This repository documents **only** functionality that is actually implemented in the codebase. Features that are incomplete, experimental, planned, mocked, or conceptual are labeled as such.
+
+Logs, screenshots, benchmark outputs, and generated artifacts are included only when they are reproducible from committed code or explicitly marked as illustrative.
+
+If a documented command fails from a clean clone, that is considered a documentation bug or implementation bug. The strict philosophy governing this repository is documented in [INVARIANTS.md](INVARIANTS.md).
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](#)
 [![C++ Standard](https://img.shields.io/badge/C%2B%2B-17-blue.svg)](https://isocpp.org/)
 [![Fortran](https://img.shields.io/badge/Fortran-2003-purple.svg)](#)
