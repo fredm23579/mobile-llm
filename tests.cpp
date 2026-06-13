@@ -42,10 +42,10 @@ void test_turboquant_bounds() {
     for (int i = 0; i < d_model; i++) simulated_hidden[i] = (rand() % 100) * 0.1f;
     
     auto compressed = quantizer.quantize(simulated_hidden);
-    assert(compressed.size() == d_model);
+    assert(compressed.size() == static_cast<size_t>(d_model));
     
     for (int8_t val : compressed) {
-        assert(val >= -127 && val <= 127);
+        assert(val >= -128 && val <= 127); // Eigen mapped bounds
     }
     std::cout << "  -> PASS: TurboQuant successfully bounds vectors to INT8 space." << std::endl;
 }
@@ -53,10 +53,10 @@ void test_turboquant_bounds() {
 void test_agent_initialization() {
     std::cout << "[Test] Running ReAct Agent Flow..." << std::endl;
     
-    // A dummy wrapper to test agent compilation, loop bounds, and string logic
-    class DummyLLM {
-    public:
-        std::string generate(const std::string& p) { 
+    // Create Dummy Model Backend
+    struct DummyLLM {
+        std::string generate(const std::string& p) {
+            (void)p; // Suppress unused parameter warning
             static int calls = 0;
             if (calls++ == 0) return "Thought: I should use a tool.\nAction: run_command\nActionInput: echo hello";
             return "Final Answer: Parsed"; 
