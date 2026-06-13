@@ -1,5 +1,6 @@
 <div align="center">
-  <h1>⚡ MobileLLM Engine</h1>
+  <img src="assets/banner.png" alt="MobileLLM Banner" width="100%">
+  <br>
   <p><b>State-of-the-Art O(N) Linear-Time Large Language Model Inference Engine for Mobile Devices.</b></p>
 
   [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](#)
