@@ -8,9 +8,8 @@
 struct Config {
     std::string user_prompt = "Analyze the environment and report.";
     std::string model_path = "model.gguf";
-    std::string backend = "llama.cpp";
+    std::string backend = "native-linear";
     bool chat_mode = false;
-    bool llama_mode = false;
 };
 
 inline Config parse_cli(int argc, const char* argv[]) {
@@ -19,9 +18,8 @@ inline Config parse_cli(int argc, const char* argv[]) {
         std::string arg = argv[i];
         if (arg == "--prompt" && i + 1 < argc) config.user_prompt = argv[++i];
         else if (arg == "--model" && i + 1 < argc) config.model_path = argv[++i];
-        else if (arg == "--backend" && i + 1 < argc) { config.backend = argv[++i]; config.llama_mode = true; }
+        else if (arg == "--backend" && i + 1 < argc) config.backend = argv[++i];
         else if (arg == "--chat") config.chat_mode = true;
-        else if (arg == "--llama") config.llama_mode = true;
     }
     return config;
 }

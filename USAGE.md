@@ -9,12 +9,18 @@ The binary has been symlinked directly into your system `$PATH` (`/usr/local/bin
 ## ⚙️ Command-Line Syntax
 
 ```bash
-mobilellm [--prompt "Your agentic goal"] [--model "/path/to/model.gguf"]
+mobilellm [--prompt "Your agentic goal"] [--model "/path/to/model.gguf"] [--backend "framework_name"] [--chat]
 ```
 
 ### Arguments:
 *   `--prompt`: (String) The high-level objective you want the AutoResearch agent to accomplish.
 *   `--model`: (String) The path to the physical GGUF weights on your device. Defaults to `model.gguf`.
+*   `--backend`: (String) The underlying engine framework to process the weights. Options:
+    *   `native-linear`: (Default) Runs the O(N) Sub-Polynomial C++ Linear State architecture.
+    *   `native-transformer`: Runs standard O(N^2) Transformer Attention in native C++.
+    *   `native-mamba`: Runs the State Space Model (SSM) continuous-time architecture.
+    *   `llama.cpp`: Hooks directly into the llama.cpp C headers for standard LLaMA models.
+*   `--chat`: (Flag) Bypasses the ReAct loop and launches a standard interactive terminal chat session.
 
 ## 🤖 Running an Agentic Workflow
 

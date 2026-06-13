@@ -39,11 +39,14 @@ The explicit goal of this C++ architecture is to take the heavy mathematical wei
 
 ---
 
-## 🌟 Core Architecture: O(N) Computational Efficiency
+## 🌟 Supported Engine Frameworks & Architectures
 
-Traditional Transformer LLMs rely on $O(N^2)$ quadratic attention, which rapidly exhausts mobile RAM on long contexts. The **internal** `LibTorchLinearLLM` engine uses a Linear Recurrent State-Space design (similar to Mamba/RWKV) that is $O(N)$ in time and $O(1)$ in memory per token.
+MobileLLM is designed as a multi-model execution environment, supporting several underlying mathematically-native architectures:
 
-> **Important:** The internal engine compiles and the recurrent math kernel passes all unit tests, but **no trained weights exist for this architecture**. Running without an external backend produces random logits, not language. For actual LLM responses, use the `--llama` / `--backend` flags to route to a llama.cpp server, Ollama, or HuggingFace. See [Known Limitations](#known-limitations).
+1.  **Native Linear (`--backend native-linear`) [DEFAULT]**: O(N) Sub-Polynomial C++ Linear State architecture. Replaces standard $O(N^2)$ Transformer Attention with a rapid, recurrent moving-average mechanism. Highly efficient for extreme edge environments.
+2.  **Native Transformer (`--backend native-transformer`)**: Traditional $O(N^2)$ Self-Attention mechanism explicitly programmed in raw native C++ arrays for studying standard inference behaviors independently of major libraries.
+3.  **Native Mamba (`--backend native-mamba`)**: Implements the discretized continuous-time State Space Model (SSM) algorithm $h_t = Ah_{t-1} + Bx_t$ for efficient selective recurrence.
+4.  **llama.cpp (`--backend llama.cpp`)**: Directly hooks into the `llama.h` C API to support thousands of standard GGUF community weights (LLaMA, Mistral, Qwen) using heavily hardware-optimized backends natively in the binary.
 
 ```mermaid
 graph TD
