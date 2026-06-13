@@ -123,6 +123,12 @@ public:
             }
             
             if (tool_calls.empty()) {
+                // Defensive Programming: If a small model fails to format XML, avoid a 50-step infinite loop
+                if (response.find("<") == std::string::npos || i >= 3) {
+                    std::cout << "[Agent Warning] Model failed to emit XML tags correctly. Degrading gracefully to raw response." << std::endl;
+                    return response;
+                }
+                
                 std::cout << "[Agent Warning] No valid <tool_call> or <final_answer> emitted." << std::endl;
                 context += "\nSystem: You did not format a tool call using XML or provide a final answer. Correct your format.";
                 continue;
