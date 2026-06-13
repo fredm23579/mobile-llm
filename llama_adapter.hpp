@@ -11,6 +11,7 @@ struct Config {
     std::string model_path = "model.gguf";
     std::string backend = "native-linear";
     bool chat_mode = false;
+    bool oneshot_mode = false;
 };
 
 inline Config parse_cli(int argc, const char* argv[]) {
@@ -21,6 +22,7 @@ inline Config parse_cli(int argc, const char* argv[]) {
         else if (arg == "--model" && i + 1 < argc) config.model_path = argv[++i];
         else if (arg == "--backend" && i + 1 < argc) config.backend = argv[++i];
         else if (arg == "--chat") config.chat_mode = true;
+        else if (arg == "--oneshot") config.oneshot_mode = true;
     }
     return config;
 }
@@ -53,7 +55,7 @@ public:
 
         llama_context_params ctx_params = llama_context_default_params();
         ctx_params.n_ctx = 4096; // generous context size for AutoResearch
-        ctx_params.n_batch = 512;
+        ctx_params.n_batch = 2048; // Support large initial prompts from the Python agent
         ctx_params.no_perf = true;
 
         ctx = llama_init_from_model(model, ctx_params);

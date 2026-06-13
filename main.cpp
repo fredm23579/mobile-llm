@@ -14,7 +14,7 @@
 #include "native_mamba_llm.hpp"
 
 template <typename ModelType>
-void run_mode(ModelType& model, bool chat_mode, const std::string& user_prompt) {
+void run_mode(ModelType& model, bool chat_mode, bool oneshot_mode, const std::string& user_prompt) {
     if (chat_mode) {
         std::cout << "\n[Interactive Chat Mode Started. Type 'exit' to quit.]\n";
         std::string input;
@@ -25,6 +25,9 @@ void run_mode(ModelType& model, bool chat_mode, const std::string& user_prompt) 
             // Generate response and stream directly to standard out
             std::cout << "MobileLLM> " << model.generate("User: " + input) << "\n";
         }
+    } else if (oneshot_mode) {
+        // Direct raw inference without agent wrappers
+        std::cout << model.generate(user_prompt) << std::endl;
     } else {
         // Wrap model in the Mythos Agent Protocol for autonomous tool-use
         Agent<ModelType> agent(model);
@@ -34,11 +37,11 @@ void run_mode(ModelType& model, bool chat_mode, const std::string& user_prompt) 
 }
 
 int main(int argc, char* argv[]) {
-    std::cout << "===========================================" << std::endl;
-    std::cout << " Native C++ Mobile-Optimized LLM Engine" << std::endl;
-    std::cout << " Models: Linear, Transformer, Mamba, Llama" << std::endl;
-    std::cout << " Backends: Native C++, llama.cpp  " << std::endl;
-    std::cout << "===========================================" << std::endl;
+    std::cerr << "===========================================" << std::endl;
+    std::cerr << " Native C++ Mobile-Optimized LLM Engine" << std::endl;
+    std::cerr << " Models: Linear, Transformer, Mamba, Llama" << std::endl;
+    std::cerr << " Backends: Native C++, llama.cpp  " << std::endl;
+    std::cerr << "===========================================" << std::endl;
 
     Config config = parse_cli(argc, const_cast<const char**>(argv));
     std::string user_prompt = config.user_prompt;
@@ -52,25 +55,25 @@ int main(int argc, char* argv[]) {
         int d_model = 256;
         int vocab_size = 32000;
         
-        std::cout << "Initializing Backend Engine: [" << backend << "] from path: " << model_path << std::endl;
+        std::cerr << "Initializing Backend Engine: [" << backend << "] from path: " << model_path << std::endl;
 
         // Dynamic multi-model routing based on CLI flags
         if (backend == "llama.cpp") {
             LlamaCppEngine model(model_path, chat_mode);
-            run_mode(model, chat_mode, user_prompt);
+            run_mode(model, chat_mode, config.oneshot_mode, user_prompt);
         } else if (backend == "native-transformer") {
             NativeTransformerLLM model(d_model, vocab_size, model_path);
-            run_mode(model, chat_mode, user_prompt);
+            run_mode(model, chat_mode, config.oneshot_mode, user_prompt);
         } else if (backend == "native-mamba") {
             NativeMambaLLM model(d_model, vocab_size, model_path);
-            run_mode(model, chat_mode, user_prompt);
+            run_mode(model, chat_mode, config.oneshot_mode, user_prompt);
         } else {
             // Defensive graceful degradation: default to fastest O(N) Sub-Polynomial architecture
             if (backend != "native-linear") {
                 std::cout << "Warning: Unknown backend '" << backend << "'. Falling back to 'native-linear'." << std::endl;
             }
             NativeLinearLLM model(d_model, vocab_size, model_path);
-            run_mode(model, chat_mode, user_prompt);
+            run_mode(model, chat_mode, config.oneshot_mode, user_prompt);
         }
     } catch (const std::exception& e) {
         std::cerr << "Fatal Error: " << e.what() << std::endl;
