@@ -1,21 +1,37 @@
-# ⚡ MobileLLM Engine
+<div align="center">
+  <h1>⚡ MobileLLM Engine</h1>
+  <p><b>State-of-the-Art O(N) Linear-Time Large Language Model Inference Engine for Mobile Devices.</b></p>
 
-## 🛡️ Integrity Statement
-This repository documents **only** functionality that is actually implemented in the codebase. Features that are incomplete, experimental, planned, mocked, or conceptual are labeled as such.
+  [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](#)
+  [![C++ Standard](https://img.shields.io/badge/C%2B%2B-17-blue.svg)](https://isocpp.org/)
+  [![Fortran](https://img.shields.io/badge/Fortran-2003-purple.svg)](#)
+  [![Platform](https://img.shields.io/badge/Platform-Termux%20%7C%20Android%20%7C%20Linux-orange.svg)](#)
+  [![Complexity](https://img.shields.io/badge/Complexity-O(N)%20Linear-red.svg)](#)
+  [![License](https://img.shields.io/badge/License-MIT-gray.svg)](#)
+</div>
 
-Logs, screenshots, benchmark outputs, and generated artifacts are included only when they are reproducible from committed code or explicitly marked as illustrative.
+<br>
 
-If a documented command fails from a clean clone, that is considered a documentation bug or implementation bug. The strict philosophy governing this repository is documented in [INVARIANTS.md](INVARIANTS.md).
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](#)
-[![C++ Standard](https://img.shields.io/badge/C%2B%2B-17-blue.svg)](https://isocpp.org/)
-[![Fortran](https://img.shields.io/badge/Fortran-2003-purple.svg)](#)
-[![Platform](https://img.shields.io/badge/Platform-Termux%20%7C%20Android%20%7C%20Linux-orange.svg)](#)
-[![Complexity](https://img.shields.io/badge/Complexity-O(N)%20Linear-red.svg)](#)
-[![License](https://img.shields.io/badge/License-MIT-gray.svg)](#)
+> ## 🛡️ Integrity Statement
+> This repository documents **only** functionality that is actually implemented in the codebase. Features that are incomplete, experimental, planned, mocked, or conceptual are labeled as such.
+> 
+> Logs, screenshots, benchmark outputs, and generated artifacts are included only when they are reproducible from committed code or explicitly marked as illustrative.
+> 
+> If a documented command fails from a clean clone, that is considered a documentation bug or implementation bug. The strict philosophy governing this repository is documented in [INVARIANTS.md](INVARIANTS.md).
 
-> **State-of-the-Art $O(N)$ Linear-Time Large Language Model Inference Engine for Mobile Devices.**
+<br>
 
-MobileLLM is a highly optimized, zero-Python inference engine designed specifically for deployment in heavily memory-constrained environments like Android Termux. By combining native C++17 abstractions with bare-metal Fortran SIMD vectorization and experimental INT8 KV-cache quantization, it pushes the absolute physical limits of mobile CPU computation.
+## 📋 Table of Contents
+- [Inference vs. Training](#-inference-vs-training-the-reality-of-edge-ai)
+- [Core Architecture](#-core-architecture-on-computational-efficiency)
+- [Key Features](#-key-features)
+- [The 13-Tool Arsenal](#%EF%B8%8F-the-13-tool-termux-arsenal-click-to-expand)
+- [Open-Source Model Selector](#-open-source-model-selector---backend)
+- [Llama.cpp & Qwen Integration](#-llamacpp--qwen-integration---llama)
+- [Build Instructions](#%EF%B8%8F-build-instructions)
+- [Testing](#-testing)
+
+---
 
 ## 🧠 Inference vs. Training: The Reality of Edge AI
 
@@ -51,7 +67,10 @@ graph TD
 *   **GGUF v3 Binary Parser:** Capable of scanning memory-mapped `model.gguf` files, stripping out metadata, and mounting multi-gigabyte Tensor offsets natively.
 *   **Infinite AutoResearch Loop (Karpathy-Style):** Automatically generates step-by-step specifications and continuously self-corrects against observations until the final objective is reached.
 
-## 🛠️ The 13-Tool Termux Arsenal
+<details>
+<summary><b>🛠️ The 13-Tool Termux Arsenal (Click to Expand)</b></summary>
+<br>
+
 The LLM isn't just a chatbot; it's a native OS controller equipped with custom C++ tools that map directly to the Linux Kernel:
 1. **`run_command`**: Directly executes Termux bash commands.
 2. **`read_file`**: Rapid stream-buffer reading.
@@ -67,17 +86,22 @@ The LLM isn't just a chatbot; it's a native OS controller equipped with custom C
 12. **`text_parsing`**: Complex Unix stream extraction via `awk`.
 13. **`universal_parse`**: Dynamic magic-byte format shifting (parses `.json`, `.csv`, `.xml`, and raw `.bin` hex dumps via `xxd`).
 
+</details>
+
+<br>
+
 ## 🦙 Open-Source Model Selector (`--backend`)
 
 While MobileLLM features an internal experimental linear-time inference engine, you can seamlessly bridge the native C++ agent frontend to powerful open-source models via external backends like **Llama.cpp**, **Ollama**, and **HuggingFace Inference Endpoints**.
 
 By passing the `--backend` flag, the C++ engine dynamically reformats its payload and routes it to the corresponding API:
 
+### 1. Local Llama.cpp backend (Default)
 ```bash
-# 1. Local Llama.cpp backend (Default)
 ./mobile_llm --backend llama.cpp --chat
+```
 
-# 2. Local Ollama API
+### 2. Local Ollama API
 Ollama is a lightweight local server that effortlessly manages open-source weights. Make sure your Ollama daemon is running (`ollama serve`) before executing:
 
 ```bash
@@ -98,7 +122,7 @@ ollama pull phi3
 ./mobile_llm --backend ollama --model phi3 --prompt "Analyze the filesystem."
 ```
 
-# 3. Cloud HuggingFace Inference API
+### 3. Cloud HuggingFace Inference API
 Because the engine routes directly to `api-inference.huggingface.co`, you have access to thousands of models. You must export your HuggingFace token first:
 ```bash
 export HF_TOKEN="your_token_here"
@@ -146,7 +170,10 @@ wget -q --show-progress "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/
 
 ### Execution Examples
 
-**1. Conversational Chat Mode:**
+<details>
+<summary><b>💬 Conversational Chat Mode</b></summary>
+<br>
+
 ```bash
 ./mobile_llm --llama --chat
 ```
@@ -158,8 +185,12 @@ User> What can you do?
 MobileLLM> As an AI language model, I can do several things:
 1. Generate text: I can create written content such as articles...
 ```
+</details>
 
-**2. Autonomous OS Agent Mode (Math Evaluation):**
+<details>
+<summary><b>🤖 Autonomous OS Agent Mode (Math Evaluation)</b></summary>
+<br>
+
 ```bash
 ./mobile_llm --llama --prompt "Calculate the 10th Fibonacci number"
 ```
@@ -177,21 +208,11 @@ ActionInput: ((1+math.sqrt(5))**10 - (1-math.sqrt(5))**10) / (2**10 * math.sqrt(
 
 [Execution Complete]
 ```
+</details>
 
 *Note: Ensure your `llama.cpp` server is running locally on port 8080 before using this mode.*
 
-## 📂 Directory Structure
-
-```text
-mobile-llm/
-├── CMakeLists.txt      # Master build manifest
-├── main.cpp            # PyTorch C++ (LibTorch) execution loop
-├── fast_math.f90       # Bare-metal Fortran SIMD array processor
-├── turboquant.hpp      # Eigen3-powered vector quantization
-├── gguf_parser.hpp     # Deep binary memory-mapping for weights
-├── tokenizer.hpp       # Native Byte-Pair Encoding logic
-└── agent.hpp           # Termux OS shell-execution bridge
-```
+---
 
 ## ⚙️ Build Instructions
 
@@ -233,6 +254,19 @@ To ensure mathematical stability and memory bounds are strictly enforced on your
   -> PASS: TurboQuant successfully bounds vectors to INT8 space.
 [Test] Running ReAct Agent Flow...
   -> PASS: Agent architecture compiles and integrates successfully.
+```
+
+## 📂 Directory Structure
+
+```text
+mobile-llm/
+├── CMakeLists.txt      # Master build manifest
+├── main.cpp            # PyTorch C++ (LibTorch) execution loop
+├── fast_math.f90       # Bare-metal Fortran SIMD array processor
+├── turboquant.hpp      # Eigen3-powered vector quantization
+├── gguf_parser.hpp     # Deep binary memory-mapping for weights
+├── tokenizer.hpp       # Native Byte-Pair Encoding logic
+└── agent.hpp           # Termux OS shell-execution bridge
 ```
 
 ## 🛡️ License
