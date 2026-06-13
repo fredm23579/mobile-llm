@@ -1,6 +1,7 @@
 #!/bin/bash
 # Defines safe, local defaults for model storage
-MODEL_DIR="/root/mobile-llm/models"
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+MODEL_DIR="$SCRIPT_DIR/models"
 mkdir -p "$MODEL_DIR"
 
 # Example: Downloading a very small (0.5B), fast model for testing
