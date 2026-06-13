@@ -19,13 +19,14 @@ public:
         W_out = parser_.load_tensor("output.weight", d_model_ * vocab_size_);
         token_embd = parser_.load_tensor("token_embd.weight", d_model_ * vocab_size_);
         
-        // Typical attention weights
+        // Load projection matrices for Self-Attention (Query, Key, Value)
         W_q = parser_.load_tensor("attn_q.weight", d_model_ * d_model_);
         W_k = parser_.load_tensor("attn_k.weight", d_model_ * d_model_);
         W_v = parser_.load_tensor("attn_v.weight", d_model_ * d_model_);
     }
 
     std::string generate(const std::string& prompt) {
+        // Encode user prompt into token sequence
         std::vector<int> tokens = tokenizer_.encode(prompt);
         if (tokens.empty()) return ""; 
         
@@ -38,12 +39,14 @@ public:
             int seq_len = context_tokens.size();
             
             // O(N^2) Self-Attention Forward Pass Simulation
+            // We pre-allocate Q, K, V matrices for the entire sequence
             std::vector<std::vector<float>> Q(seq_len, std::vector<float>(d_model_, 0.0f));
             std::vector<std::vector<float>> K(seq_len, std::vector<float>(d_model_, 0.0f));
             std::vector<std::vector<float>> V(seq_len, std::vector<float>(d_model_, 0.0f));
             
             for (int t = 0; t < seq_len; ++t) {
                 int token = context_tokens[t];
+                // Defensive check to avoid segmentation faults on unknown tokens
                 if (token < 0 || token >= vocab_size_) token = 0;
                 
                 // Q, K, V projections
@@ -55,12 +58,13 @@ public:
                 }
             }
             
-            // Attention: softmax(Q * K^T / sqrt(d)) * V
+            // Scaled Dot-Product Attention: softmax(Q * K^T / sqrt(d)) * V
             std::vector<float> last_hidden(d_model_, 0.0f);
             
             for (int i = 0; i < d_model_; ++i) {
                 float val = 0.0f;
-                // Simplified attention focusing only on the last token to query the past
+                // We focus our attention calculation on the most recent token (seq_len - 1)
+                // computing its attention scores against all past tokens
                 float sum_exp = 0.0f;
                 for (int past = 0; past < seq_len; ++past) {
                     float score = 0.0f;

@@ -22,9 +22,11 @@ void run_mode(ModelType& model, bool chat_mode, const std::string& user_prompt) 
             std::cout << "\nUser> ";
             if (!std::getline(std::cin, input) || input == "exit") break;
             if (input.empty()) continue;
+            // Generate response and stream directly to standard out
             std::cout << "MobileLLM> " << model.generate("User: " + input) << "\n";
         }
     } else {
+        // Wrap model in the Mythos Agent Protocol for autonomous tool-use
         Agent<ModelType> agent(model);
         std::string final_answer = agent.run_autoresearch_loop(user_prompt);
         std::cout << "\n[Execution Complete]\n" << final_answer << std::endl;
@@ -45,11 +47,14 @@ int main(int argc, char* argv[]) {
     bool chat_mode = config.chat_mode;
 
     try {
+        // Defensive: hardcoded base values for demonstration network architecture
+        // In a full implementation, these are read dynamically from GGUF metadata.
         int d_model = 256;
         int vocab_size = 32000;
         
         std::cout << "Initializing Backend Engine: [" << backend << "] from path: " << model_path << std::endl;
 
+        // Dynamic multi-model routing based on CLI flags
         if (backend == "llama.cpp") {
             LlamaCppEngine model(model_path, chat_mode);
             run_mode(model, chat_mode, user_prompt);
@@ -60,7 +65,7 @@ int main(int argc, char* argv[]) {
             NativeMambaLLM model(d_model, vocab_size, model_path);
             run_mode(model, chat_mode, user_prompt);
         } else {
-            // Default to native-linear
+            // Defensive graceful degradation: default to fastest O(N) Sub-Polynomial architecture
             if (backend != "native-linear") {
                 std::cout << "Warning: Unknown backend '" << backend << "'. Falling back to 'native-linear'." << std::endl;
             }

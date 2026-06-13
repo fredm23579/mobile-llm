@@ -8,6 +8,7 @@
 #include <stdexcept>
 #include <cstdint>
 #include <unordered_map>
+#include <random>
 
 enum class GGUFValueType : uint32_t {
     UINT8 = 0,
@@ -43,8 +44,10 @@ public:
     GGUFParser(const std::string& filepath) {
         file_.open(filepath, std::ios::binary);
         if (!file_.is_open()) {
-            // We do not throw immediately in the scaffold, to allow the engine to run without a real file.
-            std::cerr << "[GGUF Warning] Could not open model file: " << filepath << ". Using randomized weights." << std::endl;
+            // Defensive Programming: Instead of crashing on missing weights, we dynamically
+            // fall back to an untrained initialized state using standard distribution.
+            // This ensures the mathematical engine can still run and be tested.
+            std::cerr << "[GGUF Warning] Could not open model file: " << filepath << ". Using randomly initialized untrained weights." << std::endl;
             is_valid_ = false;
             return;
         }
@@ -101,11 +104,19 @@ public:
         if (file_.is_open()) file_.close();
     }
 
-    // Load a specific named tensor from the GGUF file
+    // Load a specific named tensor from the GGUF file or fallback
     std::vector<float> load_tensor(const std::string& tensor_name, uint64_t expected_elements) {
         if (!is_valid_) {
-            // Fallback to random weights if no real model is mounted
-            return std::vector<float>(expected_elements, 0.1f);
+            // Real fallback: Initialize with a normal distribution (mean 0, std 0.02)
+            // to simulate an untrained network, removing the hardcoded 0.1f stub.
+            std::vector<float> random_tensor(expected_elements);
+            std::random_device rd;
+            std::mt19937 gen(rd());
+            std::normal_distribution<float> dist(0.0f, 0.02f);
+            for (uint64_t i = 0; i < expected_elements; ++i) {
+                random_tensor[i] = dist(gen);
+            }
+            return random_tensor;
         }
 
         auto it = tensors_.find(tensor_name);

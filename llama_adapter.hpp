@@ -3,6 +3,7 @@
 #include <vector>
 #include <iostream>
 #include <fstream>
+#include <filesystem>
 #include "llama.h"
 
 struct Config {
@@ -33,9 +34,17 @@ class LlamaCppEngine {
 
 public:
     LlamaCppEngine(const std::string& model_path, bool is_chat = false) : is_chat_(is_chat) {
+        // Initialize backend (e.g. CUDA, Metal)
         llama_backend_init();
+        
         llama_model_params model_params = llama_model_default_params();
         model_params.n_gpu_layers = 99; // try GPU if available
+        
+        // Defensive: Check file existence explicitly before invoking the C API
+        if (!std::filesystem::exists(model_path)) {
+            throw std::runtime_error("Defensive Error: Model file does not exist at path: " + model_path);
+        }
+        
         model = llama_model_load_from_file(model_path.c_str(), model_params);
         if (!model) {
             throw std::runtime_error("llama_model_load_from_file failed to load model from " + model_path);
@@ -74,12 +83,14 @@ public:
             full_prompt += "\nThought: ";
         }
 
+        // Calculate prompt token requirements
         const int n_prompt_estimate = -llama_tokenize(vocab, full_prompt.c_str(), full_prompt.size(), NULL, 0, true, true);
         std::vector<llama_token> prompt_tokens(n_prompt_estimate);
         if (llama_tokenize(vocab, full_prompt.c_str(), full_prompt.size(), prompt_tokens.data(), prompt_tokens.size(), true, true) < 0) {
             return "Error: tokenization failed";
         }
-
+        
+        // Defensive: clear memory context to prevent state leakage between autonomous runs
         llama_memory_clear(llama_get_memory(ctx), true);
 
         llama_batch batch = llama_batch_get_one(prompt_tokens.data(), prompt_tokens.size());

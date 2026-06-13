@@ -40,7 +40,9 @@ public:
     void load_vocab_json(const std::string& path) {
         std::ifstream file(path);
         if (!file.is_open()) {
-            std::cerr << "[Tokenizer] Could not open vocab.json: " << path << std::endl;
+            // Defensive: Print warning and return early if vocabulary is missing,
+            // relying on the fallback mock vocabulary initialized in the constructor.
+            std::cerr << "[Tokenizer Warning] Could not open vocab.json: " << path << ". Using mock fallback." << std::endl;
             return;
         }
         std::cout << "[Tokenizer] Loading BPE vocabulary from: " << path << std::endl;
@@ -110,12 +112,14 @@ public:
         std::vector<int> tokens;
         // Simplified BPE: greedily match longest token using O(1) hash map lookups.
         // Complexity is strictly O(1) w.r.t vocabulary size (less than polynomial).
+        // This ensures the engine doesn't bog down during high-throughput tokenization.
         size_t i = 0;
         size_t max_token_len = 50; // Const bound for max token length
         while (i < text.length()) {
             int best_len = 0;
             int best_id = -1;
             
+            // Search backwards from maximum possible token length for greedy match
             size_t max_len_to_check = std::min(max_token_len, text.length() - i);
             for (size_t len = max_len_to_check; len > 0; --len) {
                 std::string sub = text.substr(i, len);
@@ -131,7 +135,9 @@ public:
                 tokens.push_back(best_id);
                 i += best_len;
             } else {
-                tokens.push_back(text[i]); // fallback to ascii
+                // Defensive fallback: if no token matches, fall back to raw ASCII bytes
+                // to prevent infinite loops or dropping text.
+                tokens.push_back(text[i]); 
                 i++;
             }
         }

@@ -77,10 +77,14 @@ void test_gguf_parser() {
     std::cout << "[Test] Running GGUF Parser Robustness..." << std::endl;
     GGUFParser parser("non_existent_file.gguf");
     
-    // Should return fallback vector since file is invalid
+    // Should return fallback vector randomly initialized (no longer a 0.1f stub)
     auto tensor = parser.load_tensor("some_tensor", 100);
     assert(tensor.size() == 100);
-    assert(std::abs(tensor[0] - 0.1f) < 1e-5);
+    
+    // Test that it's actually populated with numbers (not all identically zero)
+    float sum_sq = 0.0f;
+    for (float v : tensor) sum_sq += v * v;
+    assert(sum_sq > 0.0f);
     
     // Test exception logic when parser IS valid but tensor doesn't exist
     // We can't easily mock is_valid_ without a real file, but fallback logic works.

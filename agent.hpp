@@ -9,6 +9,7 @@
 #include <stdexcept>
 #include <array>
 #include <fstream>
+#include <filesystem>
 
 template <typename LLM>
 class Agent {
@@ -29,6 +30,7 @@ public:
         return escaped;
     }
 
+    // Sanitizes python evaluation by escaping characters to prevent shell injection.
     std::string sanitize_python_eval(const std::string& input) {
         std::string result;
         for (char c : input) {
@@ -40,6 +42,7 @@ public:
         return result;
     }
 
+    // Main entry point for the autonomous execution loop
     std::string run_autoresearch_loop(const std::string& user_prompt) {
         std::cout << "[Mythos Protocol] Initializing Deep Agentic Reasoning..." << std::endl;
         
@@ -138,15 +141,20 @@ public:
                     std::array<char, 128> buffer;
                     std::string result;
                     std::string cmd = action_input + " 2>&1";
+                    
+                    // Defensive: Wrap popen to catch pipe creation failures.
                     FILE* pipe = popen(cmd.c_str(), "r");
                     if (!pipe) {
-                        observation += "Error executing command.\n";
+                        observation += "Error executing command: popen failed.\n";
                     } else {
                         while (fgets(buffer.data(), buffer.size(), pipe) != nullptr) {
                             result += buffer.data();
                         }
-                        pclose(pipe);
+                        int status = pclose(pipe);
                         observation += result;
+                        if (status != 0) {
+                            observation += "\n[Command exited with non-zero status: " + std::to_string(status) + "]\n";
+                        }
                         if (result.empty() || result.back() != '\n') {
                             observation += "\n";
                         }
@@ -182,8 +190,11 @@ public:
                         while (fgets(buffer.data(), buffer.size(), pipe) != nullptr) {
                             result += buffer.data();
                         }
-                        pclose(pipe);
+                        int status = pclose(pipe);
                         observation += result.empty() ? "No results found.\n" : result;
+                        if (status != 0) {
+                             observation += "\n[Web search exited with non-zero status: " + std::to_string(status) + "]\n";
+                        }
                         if (observation.back() != '\n') observation += "\n";
                     }
                 } else if (action == "python_interpreter") {
@@ -201,8 +212,11 @@ public:
                             while (fgets(buffer.data(), buffer.size(), pipe) != nullptr) {
                                 result += buffer.data();
                             }
-                            pclose(pipe);
+                            int status = pclose(pipe);
                             observation += result.empty() ? "[Code executed successfully with no stdout]\n" : result;
+                            if (status != 0) {
+                                observation += "\n[Python script exited with non-zero status: " + std::to_string(status) + "]\n";
+                            }
                             if (observation.back() != '\n') observation += "\n";
                         }
                     } else {
@@ -213,10 +227,26 @@ public:
                     if (pipe_pos != std::string::npos) {
                         std::string filename = action_input.substr(0, pipe_pos);
                         std::string write_content = action_input.substr(pipe_pos + 1);
+                        
+                        // Defensive: Auto-create parent directories to avoid missing folder errors
+                        std::filesystem::path filepath(filename);
+                        if (filepath.has_parent_path()) {
+                            try {
+                                std::filesystem::create_directories(filepath.parent_path());
+                            } catch (const std::exception& e) {
+                                observation += std::string("Error creating directories: ") + e.what() + "\n";
+                                continue;
+                            }
+                        }
+                        
                         std::ofstream file(filename);
                         if (file.is_open()) {
                             file << write_content;
-                            observation += "File written successfully.\n";
+                            if (file.fail()) {
+                                observation += "Error: Write operation failed despite file being open.\n";
+                            } else {
+                                observation += "File written successfully.\n";
+                            }
                         } else {
                             observation += "Error: Could not open file for writing.\n";
                         }
