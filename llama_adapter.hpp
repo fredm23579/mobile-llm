@@ -38,8 +38,7 @@ public:
         model_params.n_gpu_layers = 99; // try GPU if available
         model = llama_model_load_from_file(model_path.c_str(), model_params);
         if (!model) {
-            std::cerr << "Failed to load model from " << model_path << "\n";
-            return;
+            throw std::runtime_error("llama_model_load_from_file failed to load model from " + model_path);
         }
         vocab = llama_model_get_vocab(model);
 
