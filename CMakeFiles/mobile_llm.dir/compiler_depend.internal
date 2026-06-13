@@ -5,6 +5,7 @@ CMakeFiles/mobile_llm.dir/main.cpp.o
  /root/mobile-llm/main.cpp
  /root/mobile-llm/agent.hpp
  /root/mobile-llm/gguf_parser.hpp
+ /root/mobile-llm/llama_adapter.hpp
  /root/mobile-llm/tokenizer.hpp
  /root/mobile-llm/turboquant.hpp
  /root/venv/lib/python3.14/site-packages/torch/include/ATen/ATen.h

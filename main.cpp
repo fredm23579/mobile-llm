@@ -85,35 +85,7 @@ private:
 };
 
 // Translation Adapter for standard HuggingFace models via Llama.cpp server or Ollama
-class LlamaServerAdapter {
-    bool is_chat_;
-    std::string backend_;
-    std::string model_;
-public:
-    LlamaServerAdapter(bool is_chat = false, std::string backend = "llama.cpp", std::string model = "llama3") 
-        : is_chat_(is_chat), backend_(backend), model_(model) {}
-    
-    std::string generate(const std::string& prompt) {
-        std::ofstream out("/tmp/llm_prompt.txt");
-        out << prompt;
-        out.close();
-        
-        std::string cmd = "python3 /root/mobile-llm/request_llama.py";
-        if (is_chat_) cmd += " --chat";
-        cmd += " --backend " + backend_ + " --model " + model_;
-        cmd += " < /tmp/llm_prompt.txt";
-        
-        std::array<char, 128> buffer;
-        std::string result;
-        FILE* pipe = popen(cmd.c_str(), "r");
-        if (!pipe) return "Error";
-        while (fgets(buffer.data(), buffer.size(), pipe) != nullptr) {
-            result += buffer.data();
-        }
-        pclose(pipe);
-        return result;
-    }
-};
+#include "llama_adapter.hpp"
 
 int main(int argc, char* argv[]) {
     std::cout << "===========================================" << std::endl;
@@ -122,21 +94,12 @@ int main(int argc, char* argv[]) {
     std::cout << " Backends: PyTorch C++, NumPy C++ (Eigen)  " << std::endl;
     std::cout << "===========================================" << std::endl;
 
-    std::string user_prompt = "Analyze the environment and report.";
-    std::string model_path = "model.gguf"; // LibTorch/Llama.cpp default
-    std::string backend = "llama.cpp";
-    bool chat_mode = false;
-    bool llama_mode = false;
-
-    // Parse CLI arguments
-    for (int i = 1; i < argc; ++i) {
-        std::string arg = argv[i];
-        if (arg == "--prompt" && i + 1 < argc) user_prompt = argv[++i];
-        else if (arg == "--model" && i + 1 < argc) model_path = argv[++i];
-        else if (arg == "--backend" && i + 1 < argc) { backend = argv[++i]; llama_mode = true; }
-        else if (arg == "--chat") chat_mode = true;
-        else if (arg == "--llama") llama_mode = true;
-    }
+    Config config = parse_cli(argc, const_cast<const char**>(argv));
+    std::string user_prompt = config.user_prompt;
+    std::string model_path = config.model_path;
+    std::string backend = config.backend;
+    bool chat_mode = config.chat_mode;
+    bool llama_mode = config.llama_mode;
 
     try {
         // Force LibTorch to use CPU threads optimized for mobile

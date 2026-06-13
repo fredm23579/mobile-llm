@@ -4,6 +4,7 @@
 CMakeFiles/mobile_llm.dir/main.cpp.o: main.cpp \
   agent.hpp \
   gguf_parser.hpp \
+  llama_adapter.hpp \
   tokenizer.hpp \
   turboquant.hpp \
   /root/venv/lib/python3.14/site-packages/torch/include/ATen/ATen.h \
@@ -5397,8 +5398,6 @@ CMakeFiles/mobile_llm.dir/fast_math.f90.o:
 
 /usr/lib/aarch64-linux-gnu/libc.so:
 
-/usr/lib/aarch64-linux-gnu/crti.o:
-
 /usr/lib/aarch64-linux-gnu/Scrt1.o:
 
 /usr/lib/aarch64-linux-gnu/librt.so.1:
@@ -5718,6 +5717,8 @@ CMakeFiles/mobile_llm.dir/fast_math.f90.o:
 /usr/include/c++/15/ostream:
 
 /usr/include/c++/15/numeric:
+
+/usr/include/c++/15/memory:
 
 /root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_make_per_channel_quantized_tensor.h:
 
@@ -7301,10 +7302,6 @@ CMakeFiles/mobile_llm.dir/fast_math.f90.o:
 
 /root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/hardtanh_backward.h:
 
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/gradient_ops.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_use_miopen_ctc_loss_native.h:
-
 /root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_use_cudnn_rnn_flatten_weight.h:
 
 /root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/cudnn_affine_grid_generator_native.h:
@@ -7509,9 +7506,9 @@ CMakeFiles/mobile_llm.dir/fast_math.f90.o:
 
 /root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_to_sparse_bsc_ops.h:
 
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/fake_quantize_per_channel_affine_cachemask_backward_native.h:
-
 /root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/avg_pool3d_backward_native.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/fake_quantize_per_channel_affine_cachemask_backward_native.h:
 
 /root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_to_sparse_bsc_native.h:
 
@@ -7767,6 +7764,8 @@ CMakeFiles/mobile_llm.dir/fast_math.f90.o:
 
 /root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_foreach_norm_ops.h:
 
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/fbgemm_linear_fp16_weight_fp32_activation_native.h:
+
 /root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_use_miopen_ctc_loss.h:
 
 /root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/outer.h:
@@ -7947,10 +7946,6 @@ CMakeFiles/mobile_llm.dir/fast_math.f90.o:
 
 /root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/new_full.h:
 
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_foreach_atan_native.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_scaled_dot_product_fused_attention_overrideable_ops.h:
-
 /root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_foreach_rsqrt.h:
 
 /root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_foreach_asin_native.h:
@@ -8046,6 +8041,10 @@ CMakeFiles/mobile_llm.dir/fast_math.f90.o:
 /root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_upsample_bicubic2d_aa_backward.h:
 
 /root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_cufft_get_plan_cache_size_ops.h:
+
+/usr/lib/aarch64-linux-gnu/crti.o:
+
+llama_adapter.hpp:
 
 /root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/einsum_ops.h:
 
@@ -8304,22 +8303,6 @@ CMakeFiles/mobile_llm.dir/fast_math.f90.o:
 /root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_dirichlet_grad_native.h:
 
 /root/venv/lib/python3.14/site-packages/torch/include/torch/csrc/api/include/torch/nn/modules/instancenorm.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/batch_norm_gather_stats_native.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/argmin.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_debug_has_internal_overlap_ops.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/retain_grad.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_mps_convolution.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/conv_tbc_backward_native.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/core/VariableHooksInterface.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/nll_loss2d_forward.h:
 
 /root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_foreach_addcmul_ops.h:
 
@@ -8909,6 +8892,14 @@ CMakeFiles/mobile_llm.dir/fast_math.f90.o:
 
 /root/venv/lib/python3.14/site-packages/torch/include/ATen/NamedTensorUtils.h:
 
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_test_ambiguous_defaults_native.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/glu_backward_jvp.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/NestedTensorImpl.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/special_hermite_polynomial_he.h:
+
 /root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/expand_copy_ops.h:
 
 /root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_nested_tensor_size_native.h:
@@ -8920,14 +8911,6 @@ CMakeFiles/mobile_llm.dir/fast_math.f90.o:
 /root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_fused_adam_native.h:
 
 /root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/masked_scatter.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_test_ambiguous_defaults_native.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/glu_backward_jvp.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/NestedTensorImpl.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/special_hermite_polynomial_he.h:
 
 /root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/cross_entropy_loss_native.h:
 
@@ -9059,64 +9042,6 @@ CMakeFiles/mobile_llm.dir/fast_math.f90.o:
 
 /root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/mse_loss_backward_ops.h:
 
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_grid_sampler_2d_cpu_fallback_ops.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/empty_strided.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_log_softmax_backward_data.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/tril.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_fake_quantize_learnable_per_channel_affine.h:
-
-main.cpp:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/cudnn_convolution_relu_native.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/log.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_embedding_bag_dense_backward_native.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/torch/csrc/api/include/torch/data/samplers/custom_batch_request.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_sparse_semi_structured_linear.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_cdist_backward_native.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_unpack_dual_native.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_softmax_backward_data_meta.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_compute_linear_combination.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/mm.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/triplet_margin_loss_ops.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_foreach_sign_native.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_sparse_bsc_tensor_unsafe_ops.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/sparse_sampled_addmm_ops.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/triplet_margin_loss.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/feature_alpha_dropout_native.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/argmin_native.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/view_copy_ops.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_choose_qparams_per_tensor_native.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/hardshrink_native.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/torch/csrc/api/include/torch/optim.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_nested_get_jagged_dummy_ops.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_neg_view.h:
-
 /root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_foreach_mul.h:
 
 /usr/include/eigen3/Eigen/src/Eigenvalues/GeneralizedEigenSolver.h:
@@ -9135,16 +9060,6 @@ main.cpp:
 
 /root/venv/lib/python3.14/site-packages/torch/include/ATen/core/boxing/OperatorKernel.h:
 
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_linalg_slogdet_native.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_fill_mem_eff_dropout_mask_ops.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_foreach_round.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_cholesky_solve_helper_native.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/argmax_native.h:
-
 /root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/block_diag_native.h:
 
 /root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_cudnn_init_dropout_state_ops.h:
@@ -9162,6 +9077,8 @@ main.cpp:
 /root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_segment_reduce_backward_ops.h:
 
 /root/venv/lib/python3.14/site-packages/torch/include/torch/csrc/api/include/torch/data/transforms/stack.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/argmin_native.h:
 
 /root/venv/lib/python3.14/site-packages/torch/include/ATen/TensorOperators.h:
 
@@ -9210,6 +9127,10 @@ main.cpp:
 /root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/is_signed_native.h:
 
 /root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/nextafter_ops.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_foreach_atan_native.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_scaled_dot_product_fused_attention_overrideable_ops.h:
 
 /root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/mkldnn_convolution.h:
 
@@ -9279,6 +9200,46 @@ gguf_parser.hpp:
 
 /root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_batch_norm_impl_index_native.h:
 
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/cross.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/torch/csrc/api/include/torch/data/detail/data_shuttle.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/DeviceGuard.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_softmax_backward_data_native.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_autocast_to_reduced_precision_native.h:
+
+/usr/include/eigen3/Eigen/src/Core/MathFunctionsImpl.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_index_put_impl.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/TensorIterator.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/fmin_native.h:
+
+/usr/include/eigen3/Eigen/src/Core/functors/UnaryFunctors.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_sparse_mm_reduce_impl_native.h:
+
+/usr/include/aarch64-linux-gnu/bits/libm-simd-decl-stubs.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_thnn_fused_gru_cell_ops.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/CPUGeneratorImpl.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/view_copy_ops.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_choose_qparams_per_tensor_native.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/hardshrink_native.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/torch/csrc/api/include/torch/optim.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_nested_get_jagged_dummy_ops.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_neg_view.h:
+
 /usr/include/eigen3/Eigen/src/Core/Diagonal.h:
 
 /root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/div_ops.h:
@@ -9301,33 +9262,13 @@ gguf_parser.hpp:
 
 /root/venv/lib/python3.14/site-packages/torch/include/torch/csrc/api/include/torch/nn/modules/conv.h:
 
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/core/jit_type_base.h:
-
 /root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/any.h:
 
 /root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_foreach_floor_native.h:
 
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/fmin_native.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/TensorIterator.h:
-
 /root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/clamp_max_ops.h:
 
 /root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_conv_depthwise2d_ops.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_nested_tensor_softmax_with_shape.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_sparse_semi_structured_mm_native.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/index_select_backward.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/unsafe_split_with_sizes.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_cslt_sparse_mm_native.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/kl_div_ops.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_foreach_tanh_ops.h:
 
 /root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_use_cudnn_rnn_flatten_weight_ops.h:
 
@@ -9340,6 +9281,10 @@ gguf_parser.hpp:
 /root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/exponential_native.h:
 
 /root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_cast_Double.h:
+
+main.cpp:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_fake_quantize_learnable_per_channel_affine.h:
 
 /root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_histogramdd_from_bin_tensors_native.h:
 
@@ -9389,6 +9334,82 @@ gguf_parser.hpp:
 
 /root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/upsample_trilinear3d_meta.h:
 
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/conv_tbc_backward_native.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/core/VariableHooksInterface.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/retain_grad.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_mps_convolution.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/nll_loss2d_forward.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_sparse_semi_structured_mm_native.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/index_select_backward.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/unsafe_split_with_sizes.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_cslt_sparse_mm_native.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/kl_div_ops.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_foreach_tanh_ops.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_nested_tensor_softmax_with_shape.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_grid_sampler_2d_cpu_fallback_ops.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/empty_strided.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_log_softmax_backward_data.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/tril.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/core/jit_type_base.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/cudnn_convolution_relu_native.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/log.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_embedding_bag_dense_backward_native.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/torch/csrc/api/include/torch/data/samplers/custom_batch_request.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_sparse_semi_structured_linear.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_linalg_slogdet_native.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_fill_mem_eff_dropout_mask_ops.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_foreach_round.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_cholesky_solve_helper_native.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/argmax_native.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_cdist_backward_native.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_unpack_dual_native.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_softmax_backward_data_meta.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_compute_linear_combination.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/mm.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/triplet_margin_loss_ops.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_foreach_sign_native.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_sparse_bsc_tensor_unsafe_ops.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/sparse_sampled_addmm_ops.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/triplet_margin_loss.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/feature_alpha_dropout_native.h:
+
 /root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/arcsinh_native.h:
 
 /root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_grid_sampler_2d_cpu_fallback_backward_ops.h:
@@ -9410,30 +9431,6 @@ gguf_parser.hpp:
 /root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_pack_padded_sequence_ops.h:
 
 /usr/include/aarch64-linux-gnu/bits/byteswap.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/cross.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/torch/csrc/api/include/torch/data/detail/data_shuttle.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/DeviceGuard.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_softmax_backward_data_native.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_autocast_to_reduced_precision_native.h:
-
-/usr/include/eigen3/Eigen/src/Core/MathFunctionsImpl.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_index_put_impl.h:
-
-/usr/include/eigen3/Eigen/src/Core/functors/UnaryFunctors.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_sparse_mm_reduce_impl_native.h:
-
-/usr/include/aarch64-linux-gnu/bits/libm-simd-decl-stubs.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_thnn_fused_gru_cell_ops.h:
-
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/CPUGeneratorImpl.h:
 
 /root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/max_pool2d_backward_native.h:
 
@@ -10052,6 +10049,12 @@ agent.hpp:
 /root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_log_softmax_meta.h:
 
 /root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/isnan_native.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_debug_has_internal_overlap_ops.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/batch_norm_gather_stats_native.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/argmin.h:
 
 /root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/adaptive_max_pool2d_backward_native.h:
 
@@ -11591,7 +11594,9 @@ turboquant.hpp:
 
 /root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/linalg_tensorsolve_ops.h:
 
-/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/fbgemm_linear_fp16_weight_fp32_activation_native.h:
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/_use_miopen_ctc_loss_native.h:
+
+/root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/gradient_ops.h:
 
 /root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/greater_equal.h:
 
@@ -16138,5 +16143,3 @@ tokenizer.hpp:
 /root/venv/lib/python3.14/site-packages/torch/include/ATen/ops/constant_pad_nd.h:
 
 /usr/include/c++/15/locale:
-
-/usr/include/c++/15/memory:

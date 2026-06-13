@@ -73,6 +73,47 @@ void test_agent_initialization() {
     std::cout << "  -> PASS: Agent architecture compiles and integrates successfully." << std::endl;
 }
 
+#include "llama_adapter.hpp"
+
+void test_cli_parsing() {
+    std::cout << "[Test] Running CLI Flag Parsing Verification..." << std::endl;
+    
+    const char* argv1[] = {"./mobile_llm_tests", "--backend", "ollama", "--model", "llama3", "--chat"};
+    Config config1 = parse_cli(6, argv1);
+    
+    assert(config1.backend == "ollama");
+    assert(config1.model_path == "llama3");
+    assert(config1.chat_mode == true);
+    assert(config1.llama_mode == true);
+    
+    const char* argv2[] = {"./mobile_llm_tests", "--model", "custom.gguf"};
+    Config config2 = parse_cli(3, argv2);
+    
+    assert(config2.model_path == "custom.gguf");
+    assert(config2.backend == "llama.cpp"); // default
+    assert(config2.chat_mode == false);
+    assert(config2.llama_mode == false);
+
+    std::cout << "  -> PASS: CLI parsing correctly assigns flags." << std::endl;
+}
+
+void test_llama_adapter_initialization() {
+    std::cout << "[Test] Running LlamaServerAdapter Initialization..." << std::endl;
+    
+    // Test initialization without crashing
+    LlamaServerAdapter default_adapter;
+    assert(default_adapter.get_is_chat() == false);
+    assert(default_adapter.get_backend() == "llama.cpp");
+    assert(default_adapter.get_model() == "llama3");
+
+    LlamaServerAdapter custom_adapter(true, "ollama", "mistral");
+    assert(custom_adapter.get_is_chat() == true);
+    assert(custom_adapter.get_backend() == "ollama");
+    assert(custom_adapter.get_model() == "mistral");
+    
+    std::cout << "  -> PASS: LlamaServerAdapter initializes correctly." << std::endl;
+}
+
 int main() {
     std::cout << "===========================================" << std::endl;
     std::cout << " MobileLLM Robustness Test Suite           " << std::endl;
@@ -81,6 +122,8 @@ int main() {
     test_fortran_decay();
     test_turboquant_bounds();
     test_agent_initialization();
+    test_cli_parsing();
+    test_llama_adapter_initialization();
     
     std::cout << "\nALL TESTS PASSED. Engine is mathematically robust." << std::endl;
     return 0;
