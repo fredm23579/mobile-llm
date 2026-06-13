@@ -41,85 +41,97 @@ public:
     }
 
     std::string run_autoresearch_loop(const std::string& user_prompt) {
-        std::cout << "[AutoResearch] Initializing Deep Research Protocol..." << std::endl;
-        std::cout << "[AutoResearch] Drafting execution specifications..." << std::endl;
+        std::cout << "[Mythos Protocol] Initializing Deep Agentic Reasoning..." << std::endl;
         
         std::string tools_desc = 
-            "AVAILABLE TOOLS:\n"
-            "- run_command: Executes a raw bash command (e.g. ActionInput: echo hello)\n"
-            "- read_file: Reads file contents (e.g. ActionInput: /path/to/file)\n"
-            "- write_file: Writes file (e.g. ActionInput: filename content)\n"
-            "- move_file: Moves file (e.g. ActionInput: src dest)\n"
-            "- copy_file: Copies file (e.g. ActionInput: src dest)\n"
-            "- delete_file: Deletes file (e.g. ActionInput: filename)\n"
-            "- list_dir: Lists files in a directory (e.g. ActionInput: /path/to/dir)\n"
-            "- mathematics: Evaluates a Python math expression. Use Python syntax like ** for exponents (e.g. ActionInput: ((1+math.sqrt(5))**10 - (1-math.sqrt(5))**10) / (2**10 * math.sqrt(5)))\n"
-            "- search_web: DuckDuckGo search (e.g. ActionInput: search term)\n"
-            "- fetch_url: cURL a URL (e.g. ActionInput: https://example.com)\n"
-            "- pattern_match: grep file (e.g. ActionInput: pattern file)\n"
-            "- text_parsing: awk file (e.g. ActionInput: '{print $1}' file)\n"
-            "- universal_parse: parses json/csv/xml/bin (e.g. ActionInput: file.json)\n\n"
+            "<available_tools>\n"
+            "  <tool>\n"
+            "    <name>run_command</name>\n"
+            "    <description>Executes a bash command and returns stdout/stderr.</description>\n"
+            "  </tool>\n"
+            "  <tool>\n"
+            "    <name>python_interpreter</name>\n"
+            "    <description>Executes a Python script in a sandboxed environment. Provide raw python code as input.</description>\n"
+            "  </tool>\n"
+            "  <tool>\n"
+            "    <name>read_file</name>\n"
+            "    <description>Reads a file's contents into context.</description>\n"
+            "  </tool>\n"
+            "  <tool>\n"
+            "    <name>write_file</name>\n"
+            "    <description>Writes content to a file. Input format MUST be: filename|content</description>\n"
+            "  </tool>\n"
+            "  <tool>\n"
+            "    <name>search_web</name>\n"
+            "    <description>Searches the web via DuckDuckGo/Wikipedia API.</description>\n"
+            "  </tool>\n"
+            "</available_tools>\n"
+            "\n"
             "RULES:\n"
-            "1. You MUST only generate ONE Action per turn. DO NOT generate Final Answer until you see an Observation.\n"
-            "2. Wait for the C++ engine to return an Observation before generating your next Thought.\n";
+            "1. You MUST enclose your internal reasoning inside <thought>...</thought> tags before taking any action.\n"
+            "2. To use a tool, you MUST use the following XML structure:\n"
+            "<tool_call>\n"
+            "  <name>tool_name</name>\n"
+            "  <input>tool_arguments</input>\n"
+            "</tool_call>\n"
+            "3. You can execute multiple tools in a single turn by emitting multiple <tool_call> blocks.\n"
+            "4. When the task is fully complete, emit <final_answer>your solution</final_answer>.\n";
             
-        // Phase 1: AutoResearch Specification
-        std::string spec_context = "System: Create a detailed execution specification. Output 'Specification: [steps]'.\n" + tools_desc + "User: " + user_prompt;
+        std::string context = "System: You are an advanced autonomous agent.\n" + tools_desc + "\nUser: " + user_prompt + "\n";
         
-        std::string specification = llm_.generate(spec_context);
-        std::cout << "[AutoResearch] " << specification << std::endl;
-        
-        std::string context = "System: You are an AutoResearch agent. Follow this specification:\n" + specification + "\n" + tools_desc + "\nUser: " + user_prompt + "\n";
-        
-        int max_iterations = 50; // Deep continuous looping
-        bool has_observation = false;
+        int max_iterations = 50; 
         for (int i = 0; i < max_iterations; ++i) {
-            std::cout << "\n[AutoResearch] Iteration " << (i+1) << "/" << max_iterations << " | Generating thought/action..." << std::endl;
+            std::cout << "\n[Mythos Protocol] Iteration " << (i+1) << " | Reasoning Phase..." << std::endl;
 
-            // Run raw $O(N)$ linear-time inference through the LibTorch/Fortran core
             std::string response = llm_.generate(context);
-
-            if (response.find("Action:") == std::string::npos && response.find("Final Answer:") == std::string::npos) {
-                if (has_observation && !response.empty()) {
-                    // Model answered directly after seeing an Observation — treat as Final Answer.
-                    response = "Final Answer: " + response;
-                } else {
-                    std::cout << "[Agent Warning] LLM generated invalid ReAct formatting (expected Action or Final Answer)." << std::endl;
-                    response = "Final Answer: Error - Invalid syntax from LLM generator.";
-                }
-            }
-            
             context += response;
             
-            // Phase 2: Termination Check
-            size_t final_pos = response.find("Final Answer: ");
+            size_t final_pos = response.find("<final_answer>");
             if (final_pos != std::string::npos) {
-                std::cout << "[AutoResearch] Protocol Complete." << std::endl;
-                return response.substr(final_pos);
+                size_t end_final = response.find("</final_answer>", final_pos);
+                std::cout << "[Mythos Protocol] Task Accomplished." << std::endl;
+                if (end_final != std::string::npos) {
+                    return response.substr(final_pos + 14, end_final - (final_pos + 14));
+                }
+                return response.substr(final_pos + 14);
             }
             
-            // Parse response
-            std::string thought, action, action_input;
-            size_t thought_pos = response.find("Thought: ");
-            size_t action_pos = response.find("Action: ");
-            size_t input_pos = response.find("ActionInput: ");
-            
-            if (thought_pos != std::string::npos) {
-                size_t end_pos = response.find('\n', thought_pos);
-                thought = response.substr(thought_pos + 9, end_pos - (thought_pos + 9));
+            // Extract all XML tool calls natively
+            std::vector<std::pair<std::string, std::string>> tool_calls;
+            size_t search_offset = 0;
+            while (true) {
+                size_t call_start = response.find("<tool_call>", search_offset);
+                if (call_start == std::string::npos) break;
+                
+                size_t name_start = response.find("<name>", call_start);
+                size_t name_end = response.find("</name>", name_start);
+                size_t input_start = response.find("<input>", call_start);
+                size_t input_end = response.find("</input>", input_start);
+                size_t call_end = response.find("</tool_call>", call_start);
+                
+                if (name_start != std::string::npos && name_end != std::string::npos &&
+                    input_start != std::string::npos && input_end != std::string::npos) {
+                    
+                    std::string name = response.substr(name_start + 6, name_end - (name_start + 6));
+                    std::string input = response.substr(input_start + 7, input_end - (input_start + 7));
+                    tool_calls.push_back({name, input});
+                }
+                search_offset = call_end != std::string::npos ? call_end : call_start + 11;
             }
-            if (action_pos != std::string::npos) {
-                size_t end_pos = response.find('\n', action_pos);
-                action = response.substr(action_pos + 8, end_pos - (action_pos + 8));
-            }
-            if (input_pos != std::string::npos) {
-                size_t end_pos = response.find('\n', input_pos);
-                action_input = response.substr(input_pos + 13, end_pos - (input_pos + 13));
+            
+            if (tool_calls.empty()) {
+                std::cout << "[Agent Warning] No valid <tool_call> or <final_answer> emitted." << std::endl;
+                context += "\nSystem: You did not format a tool call using XML or provide a final answer. Correct your format.";
+                continue;
             }
             
-            std::cout << "[Agent] Parsed Action: " << action << " | Input: " << action_input << std::endl;
-            
-            std::string observation = "Observation: ";
+            std::string observations = "";
+            for (const auto& call : tool_calls) {
+                std::string action = call.first;
+                std::string action_input = call.second;
+                
+                std::cout << "[Agent] Executing Tool: " << action << std::endl;
+                std::string observation = "<observation tool=\"" + action + "\">\n";
 
             try {
                 if (action == "run_command") {
@@ -174,11 +186,33 @@ public:
                         observation += result.empty() ? "No results found.\n" : result;
                         if (observation.back() != '\n') observation += "\n";
                     }
+                } else if (action == "python_interpreter") {
+                    std::ofstream py_file("agent_sandbox.py");
+                    if (py_file.is_open()) {
+                        py_file << action_input;
+                        py_file.close();
+                        std::string cmd = "python3 agent_sandbox.py 2>&1";
+                        FILE* pipe = popen(cmd.c_str(), "r");
+                        if (!pipe) {
+                            observation += "Error executing sandboxed Python code.\n";
+                        } else {
+                            std::array<char, 128> buffer;
+                            std::string result;
+                            while (fgets(buffer.data(), buffer.size(), pipe) != nullptr) {
+                                result += buffer.data();
+                            }
+                            pclose(pipe);
+                            observation += result.empty() ? "[Code executed successfully with no stdout]\n" : result;
+                            if (observation.back() != '\n') observation += "\n";
+                        }
+                    } else {
+                        observation += "Error: Could not allocate python sandbox.\n";
+                    }
                 } else if (action == "write_file") {
-                    size_t space_pos = action_input.find(' ');
-                    if (space_pos != std::string::npos) {
-                        std::string filename = action_input.substr(0, space_pos);
-                        std::string write_content = action_input.substr(space_pos + 1);
+                    size_t pipe_pos = action_input.find('|');
+                    if (pipe_pos != std::string::npos) {
+                        std::string filename = action_input.substr(0, pipe_pos);
+                        std::string write_content = action_input.substr(pipe_pos + 1);
                         std::ofstream file(filename);
                         if (file.is_open()) {
                             file << write_content;
@@ -187,175 +221,25 @@ public:
                             observation += "Error: Could not open file for writing.\n";
                         }
                     } else {
-                        observation += "Error: write_file requires 'filename content' format.\n";
-                    }
-                } else if (action == "move_file") {
-                    size_t space_pos = action_input.find(' ');
-                    if (space_pos != std::string::npos) {
-                        std::string src = action_input.substr(0, space_pos);
-                        std::string dest = action_input.substr(space_pos + 1);
-                        if (std::rename(src.c_str(), dest.c_str()) == 0) {
-                            observation += "File moved successfully.\n";
-                        } else {
-                            observation += "Error: Could not move file.\n";
-                        }
-                    } else {
-                        observation += "Error: move_file requires 'src dest' format.\n";
-                    }
-                } else if (action == "copy_file") {
-                    size_t space_pos = action_input.find(' ');
-                    if (space_pos != std::string::npos) {
-                        std::string src = action_input.substr(0, space_pos);
-                        std::string dest = action_input.substr(space_pos + 1);
-                        std::ifstream src_file(src, std::ios::binary);
-                        std::ofstream dest_file(dest, std::ios::binary);
-                        if (src_file && dest_file) {
-                            dest_file << src_file.rdbuf();
-                            observation += "File copied successfully.\n";
-                        } else {
-                            observation += "Error: Could not copy file.\n";
-                        }
-                    } else {
-                        observation += "Error: copy_file requires 'src dest' format.\n";
-                    }
-                } else if (action == "pattern_match") {
-                    size_t space_pos = action_input.find(' ');
-                    if (space_pos != std::string::npos) {
-                        std::string pattern = action_input.substr(0, space_pos);
-                        std::string filename = action_input.substr(space_pos + 1);
-                        std::string cmd = "grep -n " + escape_shell_arg(pattern) + " " + escape_shell_arg(filename) + " | head -n 50 2>&1";
-                        FILE* pipe = popen(cmd.c_str(), "r");
-                        if (!pipe) {
-                            observation += "Error executing pattern match.\n";
-                        } else {
-                            std::array<char, 128> buffer;
-                            std::string result;
-                            while (fgets(buffer.data(), buffer.size(), pipe) != nullptr) {
-                                result += buffer.data();
-                            }
-                            pclose(pipe);
-                            observation += result.empty() ? "No matches found.\n" : result;
-                            if (observation.back() != '\n') observation += "\n";
-                        }
-                    } else {
-                        observation += "Error: pattern_match requires 'pattern file' format.\n";
-                    }
-                } else if (action == "mathematics") {
-                    std::string py_cmd = "import math; print(eval('''" + sanitize_python_eval(action_input) + "'''))";
-                    std::string cmd = "python3 -c " + escape_shell_arg(py_cmd) + " 2>&1";
-                    FILE* pipe = popen(cmd.c_str(), "r");
-                    if (!pipe) {
-                        observation += "Error executing mathematics.\n";
-                    } else {
-                        std::array<char, 128> buffer;
-                        std::string result;
-                        while (fgets(buffer.data(), buffer.size(), pipe) != nullptr) {
-                            result += buffer.data();
-                        }
-                        pclose(pipe);
-                        observation += result.empty() ? "Calculation failed.\n" : result;
-                        if (observation.back() != '\n') observation += "\n";
-                    }
-                } else if (action == "text_parsing") {
-                    size_t space_pos = action_input.find(' ');
-                    if (space_pos != std::string::npos) {
-                        std::string awk_cmd = action_input.substr(0, space_pos);
-                        std::string filename = action_input.substr(space_pos + 1);
-                        std::string cmd = "awk " + escape_shell_arg(awk_cmd) + " " + escape_shell_arg(filename) + " | head -n 50 2>&1";
-                        FILE* pipe = popen(cmd.c_str(), "r");
-                        if (!pipe) {
-                            observation += "Error executing text parsing.\n";
-                        } else {
-                            std::array<char, 128> buffer;
-                            std::string result;
-                            while (fgets(buffer.data(), buffer.size(), pipe) != nullptr) {
-                                result += buffer.data();
-                            }
-                            pclose(pipe);
-                            observation += result.empty() ? "No parsed text found.\n" : result;
-                            if (observation.back() != '\n') observation += "\n";
-                        }
-                    } else {
-                        observation += "Error: text_parsing requires 'awk_cmd filename' format.\n";
-                    }
-                } else if (action == "universal_parse") {
-                    std::string filename = action_input;
-                    std::string cmd;
-                    if (filename.find(".json") != std::string::npos) {
-                        cmd = "python3 -c 'import json, sys; print(json.dumps(json.load(open(sys.argv[1])), indent=2)[:2000])' " + escape_shell_arg(filename) + " 2>&1";
-                    } else if (filename.find(".csv") != std::string::npos) {
-                        cmd = "python3 -c 'import csv, sys; r=csv.reader(open(sys.argv[1])); [print(row) for _,row in zip(range(20), r)]' " + escape_shell_arg(filename) + " 2>&1";
-                    } else if (filename.find(".xml") != std::string::npos) {
-                        cmd = "python3 -c \"import xml.etree.ElementTree as ET, sys; tree=ET.parse(sys.argv[1]); print(ET.tostring(tree.getroot(), encoding='unicode')[:2000])\" " + escape_shell_arg(filename) + " 2>&1";
-                    } else if (filename.find(".bin") != std::string::npos || filename.find(".gguf") != std::string::npos) {
-                        cmd = "xxd -l 256 " + escape_shell_arg(filename) + " 2>&1";
-                    } else {
-                        cmd = "file " + escape_shell_arg(filename) + " && head -n 20 " + escape_shell_arg(filename) + " 2>&1";
-                    }
-                    
-                    FILE* pipe = popen(cmd.c_str(), "r");
-                    if (!pipe) {
-                        observation += "Error executing universal parser.\n";
-                    } else {
-                        std::array<char, 128> buffer;
-                        std::string result;
-                        while (fgets(buffer.data(), buffer.size(), pipe) != nullptr) {
-                            result += buffer.data();
-                        }
-                        pclose(pipe);
-                        observation += result.empty() ? "Unparseable or empty file.\n" : result;
-                        if (observation.back() != '\n') observation += "\n";
-                    }
-                } else if (action == "delete_file") {
-                    if (std::remove(action_input.c_str()) == 0) {
-                        observation += "File deleted successfully.\n";
-                    } else {
-                        observation += "Error: Could not delete file.\n";
-                    }
-                } else if (action == "list_dir") {
-                    std::string cmd = "ls -la " + escape_shell_arg(action_input) + " | head -n 50 2>&1";
-                    FILE* pipe = popen(cmd.c_str(), "r");
-                    if (!pipe) {
-                        observation += "Error executing list_dir.\n";
-                    } else {
-                        std::array<char, 128> buffer;
-                        std::string result;
-                        while (fgets(buffer.data(), buffer.size(), pipe) != nullptr) {
-                            result += buffer.data();
-                        }
-                        pclose(pipe);
-                        observation += result.empty() ? "Empty directory.\n" : result;
-                        if (observation.back() != '\n') observation += "\n";
-                    }
-                } else if (action == "fetch_url") {
-                    std::string cmd = "curl -sL -A 'Mozilla/5.0' " + escape_shell_arg(action_input) + " | head -n 100 2>&1";
-                    FILE* pipe = popen(cmd.c_str(), "r");
-                    if (!pipe) {
-                        observation += "Error executing fetch_url.\n";
-                    } else {
-                        std::array<char, 128> buffer;
-                        std::string result;
-                        while (fgets(buffer.data(), buffer.size(), pipe) != nullptr) {
-                            result += buffer.data();
-                        }
-                        pclose(pipe);
-                        observation += result.empty() ? "No content returned.\n" : result;
-                        if (observation.back() != '\n') observation += "\n";
+                        observation += "Error: write_file requires 'filename|content' format.\n";
                     }
                 } else {
-                    observation += "Unknown action.\n";
+                    observation += "Unknown tool action.\n";
                 }
             } catch (const std::exception& e) {
                 observation += std::string("C++ Exception caught: ") + e.what() + "\n";
             } catch (...) {
                 observation += "Unknown C++ Exception caught.\n";
             }
-            context += observation;
-            has_observation = true;
-            std::cout << "[Agent] " << observation;
+            
+            observation += "</observation>\n";
+            observations += observation;
+            } // end multi-tool loop
+            
+            context += "\n" + observations;
         }
         
-        return "Final Answer: The task is complete.";
+        return "Task terminated or completed max iterations.";
     }
 
 private:
